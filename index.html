@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>D｜Anime Downloader · X Video Tool</title>
+    
+    <!-- PWA Meta -->
+    <meta name="theme-color" content="#0a0a1a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="D Downloader">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%23a855f7'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='60' font-weight='bold' font-family='Inter'>D</text></svg>">
+    
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        body {
+            background: radial-gradient(circle at 10% 20%, #0a0a1a, #03010a);
+            background-attachment: fixed;
+            transition: background 0.3s ease, color 0.3s;
+        }
+        body.light-theme {
+            background: #f4f0fc;
+            color: #1a1a2e;
+        }
+        .logo-d {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            border-radius: 30px 20px 30px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 2.8rem;
+            font-family: 'Inter', sans-serif;
+            color: white;
+            text-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+            box-shadow: 0 8px 20px rgba(168, 85, 247, 0.4);
+            transition: 0.2s;
+            user-select: none;
+        }
+        .logo-d:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 28px rgba(236, 72, 153, 0.5);
+        }
+        .anime-bg-shape {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            background-image: radial-gradient(circle at 90% 10%, rgba(168, 85, 247, 0.08) 0%, transparent 55%),
+                repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.01) 0px, rgba(255, 255, 255, 0.01) 2px, transparent 2px, transparent 8px);
+        }
+        .light-theme .anime-bg-shape {
+            background-image: radial-gradient(circle at 90% 10%, rgba(168, 85, 247, 0.05) 0%, transparent 55%),
+                repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.01) 0px, rgba(0, 0, 0, 0.01) 2px, transparent 2px, transparent 8px);
+        }
+        .card-glass {
+            background: rgba(15, 15, 30, 0.65);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(168, 85, 247, 0.25);
+            border-radius: 2rem;
+            transition: background 0.3s, border 0.3s;
+        }
+        .light-theme .card-glass {
+            background: rgba(255, 255, 255, 0.75);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            box-shadow: 0 4px 24px rgba(168, 85, 247, 0.08);
+        }
+        .tab-btn {
+            color: #9ca3af;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .tab-btn:hover {
+            color: #d8b4fe;
+        }
+        .tab-active {
+            border-bottom: 2px solid #ec4899;
+            color: #f0a6ff !important;
+            text-shadow: 0 0 3px #ec4899;
+        }
+        .light-theme .tab-active {
+            color: #a21caf !important;
+            text-shadow: none;
+            border-bottom-color: #c026d3;
+        }
+        .light-theme .tab-btn:hover {
+            color: #7e22ce;
+        }
+        .anime-input {
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid #3b2a4f;
+            transition: 0.2s;
+            color: #e2e8f0;
+        }
+        .light-theme .anime-input {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid #d4c4e8;
+            color: #1e1b2e;
+        }
+        .anime-input:focus {
+            border-color: #c084fc;
+            box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.3);
+            outline: none;
+        }
+        .spinner-anime {
+            width: 40px;
+            height: 40px;
+            border: 2px solid rgba(168, 85, 247, 0.2);
+            border-top: 2px solid #ec4899;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .history-item, .batch-item {
+            transition: all 0.15s;
+            cursor: pointer;
+        }
+        .history-item:hover, .batch-item:hover {
+            background: rgba(168, 85, 247, 0.2);
+            border-left: 3px solid #ec4899;
+        }
+        .light-theme .history-item:hover,
+        .light-theme .batch-item:hover {
+            background: rgba(168, 85, 247, 0.1);
+        }
+        video {
+            border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+            background: #000;
+        }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: #1a1427; }
+        .light-theme ::-webkit-scrollbar-track { background: #e5d9f5; }
+        ::-webkit-scrollbar-thumb { background: #a855f7; border-radius: 10px; }
+        .vtab { transition: all 0.2s; }
+        .vtab-active {
+            background: rgba(168, 85, 247, 0.3) !important;
+            color: #f0a6ff !important;
+            border-bottom: 2px solid #ec4899;
+        }
+        .light-theme .vtab-active {
+            background: rgba(168, 85, 247, 0.2) !important;
+            color: #7e22ce !important;
+        }
+        /* QR code modal */
+        .qr-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .qr-modal-content {
+            background: #1a1030;
+            border: 1px solid #a855f7;
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            text-align: center;
+            max-width: 90vw;
+        }
+        .light-theme .qr-modal-content {
+            background: white;
+            border-color: #c084fc;
+        }
+        /* Bouton installer PWA */
+        .install-btn {
+            display: none;
+            background: linear-gradient(135deg, #7c3aed, #db2777);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .install-btn:hover { transform: scale(1.03); }
+        .install-btn.show { display: inline-flex; align-items: center; gap: 0.5rem; }
+    </style>
+</head>
+<body class="text-gray-200 relative" id="mainBody">
+    <div class="anime-bg-shape"></div>
+
+    <!-- Toast container -->
+    <div id="toast" class="fixed top-4 right-4 z-50 transition-all duration-300 pointer-events-none opacity-0">
+        <div class="bg-purple-800 text-white px-4 py-2 rounded-full text-sm shadow-lg"></div>
+    </div>
+
+    <main class="relative z-10 max-w-5xl mx-auto px-4 py-6 md:py-10">
+        <!-- EN-TÊTE avec grand logo D -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 mb-6">
+            <div class="flex items-center gap-4">
+                <div class="logo-d">D</div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight bg-gradient-to-r from-fuchsia-300 to-violet-400 bg-clip-text text-transparent">
+                        Anime Sama<br>
+                        <span class="text-xs text-gray-400 font-normal">▸ X Video Downloader</span>
+                    </h1>
+                </div>
+            </div>
+            <div class="flex gap-2 items-center flex-wrap">
+                <span id="apiStatus" class="text-xs px-3 py-1 rounded-full bg-white/5 border border-white/10 hidden sm:flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span> APIs stables
+                </span>
+                <button id="installPwaBtn" class="install-btn" title="Installer l'application">
+                    📲 Installer
+                </button>
+                <button id="themeToggle" class="text-sm px-4 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition">
+                    ☀️ Mode clair
+                </button>
+            </div>
+        </div>
+
+        <!-- Barre onglets -->
+        <div class="flex flex-wrap gap-5 border-b border-purple-900/40 mb-7" id="tabBar">
+            <button id="tabSingle" class="tab-btn tab-active pb-2 text-sm font-medium transition-all px-1">▸ Unique</button>
+            <button id="tabBatch" class="tab-btn pb-2 text-sm font-medium transition-all px-1">▸ Batch</button>
+            <button id="tabHistory" class="tab-btn pb-2 text-sm font-medium transition-all px-1">▸ Historique</button>
+        </div>
+
+        <!-- PANEL UNIQUE -->
+        <div id="panelSingle" class="panel space-y-5">
+            <div class="card-glass p-5">
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="relative flex-1">
+                        <input type="text" id="tweetUrl"
+                        class="w-full anime-input rounded-2xl px-4 py-3 pr-12 text-sm"
+                        placeholder="https://x.com/.../status/..."
+                        autocomplete="off" spellcheck="false">
+                        <button id="pasteBtn" title="Coller depuis le presse-papier"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-fuchsia-400 transition text-xl">
+                        📋
+                    </button>
+                </div>
+                <button id="analyzeBtn"
+                class="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 px-6 py-3 rounded-2xl font-semibold text-white shadow-lg transition transform hover:scale-[1.02] active:scale-95">
+                ✨ Extraire
+            </button>
+        </div>
+        <div id="statusArea" class="mt-5 min-h-[280px]">
+            <div id="initialMessage"
+            class="text-center py-10 text-gray-400 border border-dashed border-purple-800/50 rounded-2xl text-sm">
+            📀 Collez l'URL d'un tweet avec vidéo — l'esprit anime veille ✨
+        </div>
+        <div id="loadingState"
+        class="hidden flex flex-col items-center py-10">
+        <div class="spinner-anime"></div>
+        <p class="mt-3 text-fuchsia-300 text-sm">Analyse en cours... voyons voir si l'anime est dispo</p>
+    </div>
+    <div id="resultContainer" class="hidden"></div>
+    <div id="errorContainer"
+    class="hidden bg-red-950/40 border border-red-700/50 rounded-2xl p-4 text-sm"></div>
+</div>
+</div>
+</div>
+
+<!-- PANEL BATCH -->
+<div id="panelBatch" class="panel hidden space-y-4">
+    <div class="card-glass p-5">
+        <textarea id="batchUrls" rows="4"
+        class="w-full anime-input rounded-2xl p-3 text-sm font-mono"
+        placeholder="https://x.com/.../status/...&#10;https://x.com/.../status/..."
+    spellcheck="false"></textarea>
+    <div class="flex gap-3 mt-4 flex-wrap">
+        <button id="batchAnalyzeBtn"
+        class="bg-purple-700 hover:bg-purple-600 px-5 py-2 rounded-xl text-sm font-medium transition">
+        🎬 Découper le batch
+    </button>
+    <button id="batchClearBtn"
+    class="bg-white/5 border border-white/10 hover:bg-white/10 px-4 py-2 rounded-xl text-sm transition">
+    🧹 Effacer
+</button>
+</div>
+<div id="batchProgressContainer" class="hidden mt-3 space-y-1">
+<div class="flex justify-between text-xs text-gray-400">
+    <span id="batchProgressLabel">Progression</span>
+    <span id="batchProgressCount">0/0</span>
+</div>
+<div class="batch-progress h-1 rounded bg-purple-900/30 overflow-hidden">
+    <div id="batchProgressBar" class="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded transition-all duration-300" style="width:0%"></div>
+</div>
+</div>
+<div id="batchResultArea" class="mt-5 space-y-2 max-h-96 overflow-y-auto"></div>
+</div>
+</div>
+
+<!-- PANEL HISTORIQUE -->
+<div id="panelHistory" class="panel hidden">
+    <div class="card-glass p-5">
+        <div class="flex justify-between items-center mb-4">
+            <span class="text-sm font-mono text-fuchsia-300">📖 Derniers succès</span>
+            <button id="clearHistoryBtn"
+            class="text-xs text-gray-400 hover:text-red-400 transition">
+            🗑️ Effacer tout
+        </button>
+    </div>
+    <div id="historyList" class="space-y-2 max-h-96 overflow-y-auto"></div>
+</div>
+</div>
+
+<div class="text-center text-gray-500 text-xs mt-8 border-t border-purple-900/30 pt-5">
+    ✨ Ctrl+Entrée pour lancer | API vx / fx / twitsave | QR code & PWA ready ✨
+</div>
+</main>
+
+<!-- QR Code Modal (caché) -->
+<div id="qrModal" class="qr-modal hidden" onclick="if(event.target===this) this.classList.add('hidden')">
+    <div class="qr-modal-content">
+        <h3 class="text-fuchsia-300 text-sm font-semibold mb-3">📱 QR Code du lien vidéo</h3>
+        <img id="qrImage" src="" alt="QR Code" class="mx-auto rounded-xl bg-white p-2" style="max-width:200px; height:auto;">
+        <p class="text-xs text-gray-400 mt-3">Scannez pour ouvrir sur votre téléphone</p>
+        <button onclick="document.getElementById('qrModal').classList.add('hidden')" class="mt-3 text-xs bg-purple-700 hover:bg-purple-600 px-4 py-1.5 rounded-full transition">Fermer</button>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ============ DOM ELEMENTS ============
+        const mainBody = document.getElementById('mainBody');
+        const urlInput = document.getElementById('tweetUrl');
+        const pasteBtn = document.getElementById('pasteBtn');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const initialDiv = document.getElementById('initialMessage');
+        const loadingDiv = document.getElementById('loadingState');
+        const resultDiv = document.getElementById('resultContainer');
+        const errorDiv = document.getElementById('errorContainer');
+        const themeToggle = document.getElementById('themeToggle');
+        const apiStatus = document.getElementById('apiStatus');
+        const installPwaBtn = document.getElementById('installPwaBtn');
+        const qrModal = document.getElementById('qrModal');
+        const qrImage = document.getElementById('qrImage');
+        const toast = document.getElementById('toast');
+
+        const tabSingle = document.getElementById('tabSingle');
+        const tabBatch = document.getElementById('tabBatch');
+        const tabHistory = document.getElementById('tabHistory');
+        const panelSingle = document.getElementById('panelSingle');
+        const panelBatch = document.getElementById('panelBatch');
+        const panelHistory = document.getElementById('panelHistory');
+
+        const batchUrls = document.getElementById('batchUrls');
+        const batchAnalyzeBtn = document.getElementById('batchAnalyzeBtn');
+        const batchClearBtn = document.getElementById('batchClearBtn');
+        const batchResultArea = document.getElementById('batchResultArea');
+        const batchProgressContainer = document.getElementById('batchProgressContainer');
+        const batchProgressBar = document.getElementById('batchProgressBar');
+        const batchProgressCount = document.getElementById('batchProgressCount');
+        const batchProgressLabel = document.getElementById('batchProgressLabel');
+
+        const historyListDiv = document.getElementById('historyList');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+        // ============ STATE ============
+        let isDark = true;
+        let history = [];
+        let batchAbortController = null;
+        let deferredPrompt = null; // PWA install
+
+        // ============ PWA SETUP ============
+        function setupPwa() {
+            // Manifest inline via blob
+            const manifest = {
+                name: 'D｜Anime Downloader',
+                short_name: 'D Downloader',
+                description: 'Téléchargez des vidéos X/Twitter en qualité optimale',
+                start_url: '.',
+                display: 'standalone',
+                background_color: '#0a0a1a',
+                theme_color: '#a855f7',
+                icons: [{
+                    src: 'data:image/svg+xml,' + encodeURIComponent(
+                        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="25" fill="#a855f7"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="white" font-size="60" font-weight="bold" font-family="Inter">D</text></svg>'
+                        ),
+                    sizes: '100x100',
+                    type: 'image/svg+xml'
+                }]
+            };
+            const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+            const manifestUrl = URL.createObjectURL(blob);
+            const link = document.createElement('link');
+            link.rel = 'manifest';
+            link.href = manifestUrl;
+            document.head.appendChild(link);
+
+            // Service worker basique pour offline cache
+            if ('serviceWorker' in navigator) {
+                const swCode = `
+                const CACHE = 'd-downloader-v1';
+                self.addEventListener('install', e => {
+                  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/'])));
+                });
+                self.addEventListener('fetch', e => {
+                  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+                });`;
+                const swBlob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(swBlob);
+                navigator.serviceWorker.register(swUrl).catch(() => {});
+            }
+
+            // Gestion de l'event beforeinstallprompt
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                installPwaBtn.classList.add('show');
+            });
+            installPwaBtn.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const result = await deferredPrompt.userChoice;
+                    if (result.outcome === 'accepted') installPwaBtn.classList.remove('show');
+                    deferredPrompt = null;
+                }
+            });
+            window.addEventListener('appinstalled', () => {
+                installPwaBtn.classList.remove('show');
+                deferredPrompt = null;
+            });
+        }
+        setupPwa();
+
+        // ============ THEME ============
+        function applyTheme(dark) {
+            isDark = dark;
+            if (dark) {
+                mainBody.classList.remove('light-theme');
+                mainBody.style.background = "radial-gradient(circle at 10% 20%, #0a0a1a, #03010a)";
+                themeToggle.innerHTML = '☀️ Mode clair';
+            } else {
+                mainBody.classList.add('light-theme');
+                mainBody.style.background = "#f4f0fc";
+                themeToggle.innerHTML = '🌙 Mode nuit';
+            }
+            localStorage.setItem('d_theme_v3', dark ? 'dark' : 'light');
+        }
+        const savedTheme = localStorage.getItem('d_theme_v3');
+        // Détection automatique des préférences système si pas de choix sauvegardé
+        if (savedTheme === null) {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            applyTheme(prefersDark);
+        } else {
+            applyTheme(savedTheme !== 'light');
+        }
+        themeToggle.onclick = () => applyTheme(!isDark);
+
+        // ============ TOAST ============
+        function showToast(msg) {
+            const div = toast.querySelector('div');
+            div.textContent = msg;
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+            clearTimeout(toast._timeout);
+            toast._timeout = setTimeout(() => {
+                toast.classList.add('opacity-0');
+                toast.classList.remove('opacity-100');
+            }, 2000);
+        }
+
+        // ============ HELPERS ============
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, m => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[m]));
+        }
+        async function fetchWithTimeout(url, opts = {}, timeout = 12000) {
+            const ctrl = new AbortController();
+            const combinedSignal = opts.signal ?
+                (opts.signal.aborted ? AbortSignal.abort() : AbortSignal.any([opts.signal, ctrl.signal])) :
+                ctrl.signal;
+            const id = setTimeout(() => ctrl.abort(), timeout);
+            try {
+                const res = await fetch(url, { ...opts, signal: combinedSignal });
+                clearTimeout(id);
+                return res;
+            } catch (e) {
+                clearTimeout(id);
+                throw e;
+            }
+        }
+        function bitrateLabel(bitrate) {
+            if (!bitrate) return "🎞️ Standard";
+            if (bitrate >= 1800000) return "🔥 Haute définition (1080p+)";
+            if (bitrate >= 800000) return "📱 HD (720p)";
+            if (bitrate >= 400000) return "🎬 480p";
+            return "📼 Basse qualité";
+        }
+        function dedupe(variants) {
+            const map = new Map();
+            for (let v of variants)
+                if (v.url && !map.has(v.url)) map.set(v.url, v);
+            return Array.from(map.values()).sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
+        }
+        function isValidTweetUrl(url) {
+            try {
+                const u = new URL(url);
+                return (u.hostname === 'x.com' || u.hostname === 'twitter.com' || u.hostname.includes('twitter.com') || u
+                    .hostname.includes('x.com')) &&
+                    u.pathname.includes('/status/');
+            } catch { return false; }
+        }
+        function generateQR(url) {
+            const encoded = encodeURIComponent(url);
+            return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encoded}&bgcolor=white&color=a855f7`;
+        }
+        function showQrModal(url) {
+            qrImage.src = generateQR(url);
+            qrModal.classList.remove('hidden');
+        }
+
+        // ============ API STATUS ============
+        function setApiStatus(status, text) {
+            const dot = apiStatus.querySelector('span');
+            apiStatus.childNodes[1] && (apiStatus.childNodes[1].textContent = ' ' + text);
+            if (dot) {
+                dot.className = 'w-2 h-2 rounded-full inline-block ' +
+                    (status === 'ok' ? 'bg-green-400' : status === 'slow' ? 'bg-yellow-400' : 'bg-red-400');
+            }
+        }
+
+        // ============ API CORE ============
+        async function fetchVxTwitter(url) {
+            const path = new URL(url).pathname;
+            const apiUrl = `https://api.vxtwitter.com${path}`;
+            const resp = await fetchWithTimeout(apiUrl);
+            if (!resp.ok) throw new Error(`vxTwitter ${resp.status}`);
+            const data = await resp.json();
+            const groups = [];
+            const mediaList = data.media_extended || [];
+            for (let m of mediaList) {
+                if (m.type !== 'video') continue;
+                let variants = [];
+                if (m.videoVariants) variants.push(...m.videoVariants.filter(v => v.content_type === 'video/mp4' && v
+                    .url).map(v => ({ bitrate: v.bitrate || 0, url: v.url })));
+                if (m.url && m.url.includes('.mp4')) variants.push({ bitrate: m.bitrate || 0, url: m.url });
+                if (variants.length) groups.push({ thumbnail: m.thumbnail_url || null, variants: dedupe(variants) });
+            }
+            if (groups.length === 0 && data.mediaURLs?.length)
+                groups.push({ thumbnail: data.thumbnail_url, variants: data.mediaURLs.map(u => ({ bitrate: 0,
+                        url: u })) });
+            return { groups, author: data.user_screen_name || data.user?.screen_name, text: data.text, raw: data,
+                service: 'vxTwitter', metadata: { date: data.created_at, likes: data.likes, retweets: data.retweets,
+                    views: data.views } };
+        }
+        async function fetchFxTwitter(url) {
+            const path = new URL(url).pathname;
+            const apiUrl = `https://api.fxtwitter.com${path}`;
+            const resp = await fetchWithTimeout(apiUrl);
+            if (!resp.ok) throw new Error(`fxTwitter ${resp.status}`);
+            const data = await resp.json();
+            const groups = [];
+            const allMedia = data.tweet?.media?.all || [];
+            for (let m of allMedia) {
+                if (m.type !== 'video') continue;
+                const variants = (m.variants || []).filter(v => v.content_type === 'video/mp4' && v.url).map(v => ({
+                    bitrate: v.bitrate || 0,
+                    url: v.url
+                }));
+                if (variants.length) groups.push({ thumbnail: m.thumbnail_url || null, variants: dedupe(
+                    variants) });
+            }
+            return { groups, author: data.tweet?.author?.screen_name, text: data.tweet?.text, raw: data,
+                service: 'fxTwitter', metadata: { date: data.tweet?.created_at, likes: data.tweet?.likes, retweets: data
+                        .tweet?.retweets, views: data.tweet?.views } };
+        }
+        async function fetchTwitsave(url) {
+            const api = `https://twitsave.app/api/get?url=${encodeURIComponent(url)}`;
+            const resp = await fetchWithTimeout(api, {}, 15000);
+            if (!resp.ok) throw new Error(`twitsave ${resp.status}`);
+            const json = await resp.json();
+            if (!json.success || !json.data?.video?.length) throw new Error('Aucune vidéo');
+            const variants = json.data.video.map(v => ({
+                bitrate: v.quality === 'HD' ? 2500000 : v.quality === 'SD' ? 800000 : 400000,
+                url: v.url
+            }));
+            return { groups: [{ thumbnail: json.data.thumbnail || null, variants: dedupe(variants) }], author: null,
+                text: null, raw: json, service: 'twitsave', metadata: {} };
+        }
+        async function fetchAnyApi(url, signal) {
+            const services = [fetchVxTwitter, fetchFxTwitter, fetchTwitsave];
+            let lastError = null;
+            for (let f of services) {
+                if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+                try {
+                    const res = await f(url);
+                    if (res.groups?.some(g => g.variants.length)) {
+                        setApiStatus('ok', 'APIs stables');
+                        return res;
+                    }
+                } catch (e) {
+                    lastError = e;
+                    if (e.name === 'AbortError') throw e;
+                }
+            }
+            setApiStatus('error', 'APIs injoignables');
+            throw lastError || new Error("Toutes les API ont échoué");
+        }
+
+        // ============ HISTORIQUE ============
+        function loadHistory() {
+            const stored = localStorage.getItem('anime_history_v3');
+            if (stored) { try { history = JSON.parse(stored); } catch { history = []; } }
+            renderHistory();
+        }
+        function saveHistory() { localStorage.setItem('anime_history_v3', JSON.stringify(history)); }
+        function addToHistory(url, author, thumbnail, videoCount) {
+            history = history.filter(h => h.url !== url);
+            history.unshift({ url, timestamp: Date.now(), author: author || 'anime', thumbnail: thumbnail || '',
+                videoCount });
+            if (history.length > 25) history.pop();
+            saveHistory();
+            renderHistory();
+        }
+        function renderHistory() {
+            if (!historyListDiv) return;
+            if (history.length === 0) {
+                historyListDiv.innerHTML =
+                    '<div class="text-center text-gray-400 py-6 text-sm">📭 Pas d\'historique encore</div>';
+                return;
+            }
+            historyListDiv.innerHTML = history.map((h, idx) => `
+            <div class="history-item flex items-center justify-between p-3 rounded-xl bg-white/5 backdrop-blur-sm border border-purple-900/30"
+                 data-url="${escapeHtml(h.url)}" data-idx="${idx}">
+              <div class="flex gap-3 items-center min-w-0 flex-1">
+                ${h.thumbnail ? `<img src="${escapeHtml(h.thumbnail)}" class="w-8 h-8 rounded object-cover flex-shrink-0" onerror="this.style.display='none'">` : '<div class="w-8 h-8 bg-purple-800/30 rounded flex-shrink-0"></div>'}
+                <div class="min-w-0">
+                  <div class="text-xs font-mono truncate">${escapeHtml(h.url.slice(0,50))}…</div>
+                  <div class="text-xs text-purple-300">@${escapeHtml(h.author)} · ${h.videoCount} vidéo(s) · ${new Date(h.timestamp).toLocaleDateString()}</div>
+                </div>
+              </div>
+              <button class="history-reload-btn text-fuchsia-400 text-xs bg-black/30 px-2 py-1 rounded-full flex-shrink-0 ml-2 hover:bg-fuchsia-700/30 transition"
+                      data-url="${escapeHtml(h.url)}">↻</button>
+            </div>
+          `).join('');
+
+            historyListDiv.querySelectorAll('.history-item').forEach(el => {
+                el.addEventListener('click', function(e) {
+                    if (e.target.closest('.history-reload-btn')) return;
+                    const url = this.getAttribute('data-url');
+                    if (url) { urlInput.value = url;
+                        setActiveTab('single');
+                        analyzeSingle(); }
+                });
+            });
+            historyListDiv.querySelectorAll('.history-reload-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const url = this.getAttribute('data-url');
+                    if (url) { urlInput.value = url;
+                        setActiveTab('single');
+                        analyzeSingle(); }
+                });
+            });
+        }
+        clearHistoryBtn?.addEventListener('click', () => { history = [];
+            saveHistory();
+            renderHistory(); });
+
+        // ============ RENDU RESULTAT ============
+        async function renderResult(data, originalUrl) {
+            const { groups, author, text, metadata, service, raw } = data;
+            if (!groups.length) throw new Error("Zéro vidéo");
+            addToHistory(originalUrl, author, groups[0]?.thumbnail, groups.length);
+
+            let metaHtml = '';
+            if (metadata && (metadata.date || metadata.views || metadata.likes)) {
+                const parts = [];
+                if (metadata.date) parts.push(`📅 ${new Date(metadata.date).toLocaleDateString('fr-FR')}`);
+                if (metadata.views) parts.push(`👁️ ${Number(metadata.views).toLocaleString()}`);
+                if (metadata.likes) parts.push(`❤️ ${Number(metadata.likes).toLocaleString()}`);
+                if (metadata.retweets) parts.push(`🔁 ${Number(metadata.retweets).toLocaleString()}`);
+                metaHtml = `<div class="flex flex-wrap gap-3 text-xs text-gray-300 mb-3">${parts.join(' · ')}</div>`;
+            }
+            const authorHtml = author ? `<div class="text-sm font-mono text-fuchsia-300">@${escapeHtml(author)}</div>` :
+                '';
+            const textHtml = text ?
+                `<p class="text-xs text-gray-300 italic mb-2">${escapeHtml(text.substring(0,200))}${text.length>200?'…':''}</p>` :
+                '';
+
+            let tabsHtml = '';
+            if (groups.length > 1) {
+                tabsHtml = `<div class="flex gap-2 border-b border-purple-800/50 mb-3 flex-wrap">
+              ${groups.map((_, idx) => `<button class="vtab text-xs px-3 py-1 rounded-t-md hover:bg-purple-900/30 transition ${idx===0?'vtab-active':''}" data-vtab="${idx}">📀 Vidéo ${idx+1}</button>`).join('')}
+            </div>`;
+            }
+            let panelsHtml = '';
+            groups.forEach((group, idx) => {
+                const variants = group.variants;
+                const selectId = `sel_${idx}`;
+                const options = variants.map((v, i) =>
+                    `<option value="${i}" data-url="${escapeHtml(v.url)}">${bitrateLabel(v.bitrate)} ${v.bitrate ? '('+(v.bitrate/1000).toFixed(0)+'kbps)' : ''}</option>`
+                    ).join('');
+                const firstUrl = variants[0]?.url || '';
+                panelsHtml += `
+            <div id="vpanel_${idx}" class="vpanel space-y-3 ${idx>0?'hidden':''}">
+              <div class="flex flex-wrap gap-4">
+                ${group.thumbnail ? `<img src="${escapeHtml(group.thumbnail)}" class="w-24 h-20 object-cover rounded-xl shadow flex-shrink-0" onerror="this.style.display='none'" alt="thumb">` : ''}
+                <div class="flex-1 min-w-[200px]">
+                  <select id="${selectId}" class="text-sm bg-black/50 border border-purple-500 rounded-xl px-2 py-1.5 w-full max-w-xs">${options}</select>
+                  <div class="flex flex-wrap gap-2 mt-2">
+                    <button data-url="${escapeHtml(firstUrl)}" data-group="${idx}" class="downBtn bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-xs px-3 py-1.5 rounded-full transition">⬇️ DL</button>
+                    <button data-url="${escapeHtml(firstUrl)}" data-group="${idx}" class="copyBtn bg-gray-700 hover:bg-gray-600 text-xs px-3 py-1.5 rounded-full transition">📋 Copier</button>
+                    <button data-url="${escapeHtml(firstUrl)}" data-group="${idx}" class="qrBtn bg-purple-800 hover:bg-purple-700 text-xs px-3 py-1.5 rounded-full transition">📱 QR</button>
+                    <button data-url="${escapeHtml(firstUrl)}" data-group="${idx}" class="shareBtn bg-indigo-700 hover:bg-indigo-600 text-xs px-3 py-1.5 rounded-full transition">✨ Partager</button>
+                  </div>
+                </div>
+              </div>
+              <video controls class="w-full max-h-64 rounded-2xl" src="${escapeHtml(firstUrl)}" preload="metadata"></video>
+            </div>`;
+            });
+
+            const allVariants = groups.flatMap(g => g.variants);
+            const best = allVariants.reduce((max, v) => (v.bitrate > (max?.bitrate || 0) ? v : max), null);
+            const globalBtns = `
+            <div class="flex flex-wrap gap-3 pt-3 border-t border-purple-800/30 mt-2">
+              <button id="globalBestDl" class="text-sm bg-gradient-to-r from-emerald-600 to-teal-600 px-3 py-1.5 rounded-full text-white transition">🏆 Meilleure qualité</button>
+              <button id="globalBestCopy" class="text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full transition">📋 Copier meilleur</button>
+              <button id="globalQr" class="text-sm bg-purple-700 hover:bg-purple-600 px-3 py-1.5 rounded-full transition">📱 QR Meilleur</button>
+            </div>`;
+            const techDetails = `
+            <details class="mt-4 text-xs">
+              <summary class="cursor-pointer text-gray-400 hover:text-purple-300 transition">🔧 Données brutes (${service})</summary>
+              <pre class="mt-2 p-3 bg-black/60 rounded-xl overflow-auto max-h-64 text-gray-300 text-xs">${escapeHtml(JSON.stringify(raw, null, 2))}</pre>
+            </details>`;
+
+            resultDiv.innerHTML =
+                `<div class="space-y-4">${authorHtml}${textHtml}${metaHtml}${tabsHtml}${panelsHtml}${globalBtns}${techDetails}</div>`;
+
+            // Onglets vidéo
+            if (groups.length > 1) {
+                resultDiv.querySelectorAll('.vtab').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const vidx = parseInt(btn.getAttribute('data-vtab'));
+                        resultDiv.querySelectorAll('.vpanel').forEach((p, i) => p.classList.toggle(
+                            'hidden', i !== vidx));
+                        resultDiv.querySelectorAll('.vtab').forEach((b, i) => b.classList.toggle(
+                            'vtab-active', i === vidx));
+                    });
+                });
+            }
+
+            // Liaison selects et boutons
+            for (let i = 0; i < groups.length; i++) {
+                const select = resultDiv.querySelector(`#sel_${i}`);
+                if (!select) continue;
+                const refresh = () => {
+                    const opt = select.options[select.selectedIndex];
+                    const url = opt?.getAttribute('data-url') || '';
+                    ['downBtn', 'copyBtn', 'qrBtn', 'shareBtn'].forEach(cls => {
+                        const btn = resultDiv.querySelector(`.${cls}[data-group="${i}"]`);
+                        if (btn) btn.setAttribute('data-url', url);
+                    });
+                    const vid = resultDiv.querySelector(`#vpanel_${i} video`);
+                    if (vid && url) vid.src = url;
+                };
+                select.addEventListener('change', refresh);
+                const attach = (cls, action) => {
+                    const btn = resultDiv.querySelector(`.${cls}[data-group="${i}"]`);
+                    if (!btn) return;
+                    btn.addEventListener('click', () => {
+                        const u = btn.getAttribute('data-url');
+                        if (!u) return;
+                        if (action === 'dl') {
+                            const a = document.createElement('a');
+                            a.href = u;
+                            a.download = `anime_${author||'x'}_${Date.now()}.mp4`;
+                            a.click();
+                        } else if (action === 'copy') {
+                            navigator.clipboard.writeText(u).then(() => showToast(
+                                '✅ Lien copié !'));
+                        } else if (action === 'qr') {
+                            showQrModal(u);
+                        } else if (action === 'share') {
+                            if (navigator.share) navigator.share({ url: u, title: 'Vidéo X' });
+                            else navigator.clipboard.writeText(u).then(() => showToast(
+                                'Lien copié (partage non supporté)'));
+                        }
+                    });
+                };
+                attach('downBtn', 'dl');
+                attach('copyBtn', 'copy');
+                attach('qrBtn', 'qr');
+                attach('shareBtn', 'share');
+                refresh();
+            }
+
+            // Global buttons
+            resultDiv.querySelector('#globalBestDl')?.addEventListener('click', () => {
+                if (best) {
+                    const a = document.createElement('a');
+                    a.href = best.url;
+                    a.download = `best_anime.mp4`;
+                    a.click();
+                }
+            });
+            resultDiv.querySelector('#globalBestCopy')?.addEventListener('click', () => {
+                if (best) navigator.clipboard.writeText(best.url).then(() => showToast('✅ Meilleur lien copié'));
+            });
+            resultDiv.querySelector('#globalQr')?.addEventListener('click', () => {
+                if (best) showQrModal(best.url);
+            });
+        }
+
+        // ============ ANALYSE UNIQUE ============
+        async function analyzeSingle() {
+            const rawUrl = urlInput.value.trim();
+            if (!rawUrl) { showError('URL manquante'); return; }
+            if (!isValidTweetUrl(rawUrl)) { showError('URL invalide',
+                'Doit contenir /status/ et provenir de x.com ou twitter.com'); return; }
+            showLoading();
+            try {
+                const data = await fetchAnyApi(rawUrl);
+                hideAll();
+                resultDiv.classList.remove('hidden');
+                await renderResult(data, rawUrl);
+                setApiStatus('ok', 'APIs stables');
+            } catch (e) {
+                if (e.name === 'AbortError') return;
+                showError('Extraction impossible', e.message);
+            }
+        }
+
+        function hideAll() { initialDiv.classList.add('hidden');
+            loadingDiv.classList.add('hidden');
+            resultDiv.classList.add('hidden');
+            errorDiv.classList.add('hidden'); }
+
+        function showLoading() { hideAll();
+            loadingDiv.classList.remove('hidden'); }
+
+        function showError(titre, detail) { hideAll();
+            errorDiv.classList.remove('hidden');
+            errorDiv.innerHTML =
+                `<div class="flex items-start gap-2"><span class="text-red-400 text-lg">⚠️</span><div><strong>${escapeHtml(titre)}</strong><div class="text-xs mt-1">${escapeHtml(detail||'')}</div></div></div>`; }
+
+        // ============ PASTE FROM CLIPBOARD ============
+        pasteBtn.addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text) {
+                    urlInput.value = text;
+                    showToast('📋 URL collée !');
+                }
+            } catch {
+                showToast('❌ Accès au presse-papier refusé');
+            }
+        });
+
+        // ============ BATCH ============
+        batchAnalyzeBtn.addEventListener('click', async () => {
+            const urls = batchUrls.value.split(/[\n,]+/).map(u => u.trim()).filter(u => u && isValidTweetUrl(
+            u));
+            const uniqueUrls = [...new Set(urls)];
+            if (!uniqueUrls.length) {
+                batchResultArea.innerHTML =
+                    '<div class="text-amber-400 text-sm p-3">💢 Aucune URL valide</div>';
+                return;
+            }
+            if (batchAbortController) batchAbortController.abort();
+            batchAbortController = new AbortController();
+            const signal = batchAbortController.signal;
+            batchResultArea.innerHTML = '';
+            batchProgressContainer.classList.remove('hidden');
+            batchProgressBar.style.width = '0%';
+            batchProgressCount.textContent = `0/${uniqueUrls.length}`;
+            batchAnalyzeBtn.disabled = true;
+
+            const results = [];
+            for (let i = 0; i < uniqueUrls.length; i++) {
+                if (signal.aborted) break;
+                try {
+                    const data = await fetchAnyApi(uniqueUrls[i], signal);
+                    results.push({ url: uniqueUrls[i], success: true, videoCount: data.groups.length, author: data
+                            .author, thumbnail: data.groups[0]?.thumbnail });
+                } catch (e) {
+                    if (e.name === 'AbortError') break;
+                    results.push({ url: uniqueUrls[i], success: false, error: e.message });
+                }
+                batchProgressBar.style.width = Math.round(((i + 1) / uniqueUrls.length) * 100) + '%';
+                batchProgressCount.textContent = `${i+1}/${uniqueUrls.length}`;
+            }
+            batchAnalyzeBtn.disabled = false;
+            batchAbortController = null;
+            batchProgressLabel.textContent = signal.aborted ? '⏹️ Annulé' : '✅ Terminé';
+            batchResultArea.innerHTML = results.map(r => r.success ? `
+            <div class="batch-item p-3 bg-white/5 rounded-xl cursor-pointer flex items-center justify-between gap-2 border border-purple-900/20 hover:border-purple-500/40 transition" data-url="${escapeHtml(r.url)}">
+              <div class="flex items-center gap-2 min-w-0"><span class="truncate text-sm">${escapeHtml(r.url)}</span><span class="text-fuchsia-300 text-xs">${r.videoCount} vidéo(s)</span></div>
+            </div>` : `
+            <div class="p-3 bg-red-950/40 border border-red-700/40 rounded-xl text-xs">❌ ${escapeHtml(r.url)} - ${escapeHtml(r.error)}</div>`).join('');
+            batchResultArea.querySelectorAll('.batch-item').forEach(el => el.addEventListener('click', () => {
+                urlInput.value = el.getAttribute('data-url');
+                setActiveTab('single');
+                analyzeSingle();
+            }));
+        });
+        batchClearBtn.addEventListener('click', () => {
+            if (batchAbortController) { batchAbortController.abort();
+                batchAbortController = null;
+                batchAnalyzeBtn.disabled = false; }
+            batchUrls.value = '';
+            batchResultArea.innerHTML = '';
+            batchProgressContainer.classList.add('hidden');
+        });
+
+        // ============ NAVIGATION ============
+        function setActiveTab(tab) {
+            panelSingle.classList.add('hidden');
+            panelBatch.classList.add('hidden');
+            panelHistory.classList.add('hidden');
+            [tabSingle, tabBatch, tabHistory].forEach(b => b.classList.remove('tab-active'));
+            if (tab === 'single') { panelSingle.classList.remove('hidden');
+                tabSingle.classList.add('tab-active'); } else if (tab === 'batch') { panelBatch.classList.remove(
+                    'hidden');
+                tabBatch.classList.add('tab-active'); } else if (tab === 'history') { panelHistory.classList.remove(
+                    'hidden');
+                tabHistory.classList.add('tab-active');
+                renderHistory(); }
+        }
+        tabSingle.onclick = () => setActiveTab('single');
+        tabBatch.onclick = () => setActiveTab('batch');
+        tabHistory.onclick = () => setActiveTab('history');
+
+        // ============ RACCOURCIS ============
+        urlInput.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault();
+                analyzeSingle(); }
+        });
+        analyzeBtn.onclick = analyzeSingle;
+
+        // ============ INIT ============
+        setActiveTab('single');
+        loadHistory();
+        hideAll();
+        initialDiv.classList.remove('hidden');
+        setApiStatus('ok', 'APIs stables');
+        async function checkHealth() {
+            try {
+                const resp = await fetchWithTimeout('https://api.vxtwitter.com/status', {}, 4000);
+                if (resp.ok) setApiStatus('ok', 'APIs stables');
+                else setApiStatus('slow', 'API lente');
+            } catch { setApiStatus('slow', 'API ralentie'); }
+        }
+        checkHealth();
+    })();
+</script>
+</body>
+</html>
