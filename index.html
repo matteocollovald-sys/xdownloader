@@ -3,726 +3,1668 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>X Video Downloader Mobile | Appui long pour enregistrer</title>
-    <meta name="description" content="Téléchargez les vidéos X (Twitter) sur mobile : appui long sur le lien vidéo, puis 'Enregistrer la vidéo'.">
+    <title>X Video Downloader Ultime — HD | MP3 | GIF | Discord | QR | PWA</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e1b4b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="X Video DL">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231d4ed8'/%3E%3Ctext x='50' y='67' font-size='50' text-anchor='middle' fill='white' font-weight='bold'%3E📥%3C/text%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/omggif@1.0.10/omggif.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <style>
-        body, .card, button, input { transition: background-color 0.2s, border-color 0.2s, color 0.2s; }
         .spinner { border: 3px solid rgba(255,255,255,0.2); border-top: 3px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .qr-popup { position: fixed; bottom: 20px; right: 20px; z-index: 50; background: white; border-radius: 16px; box-shadow: 0 20px 35px -10px rgba(0,0,0,0.3); }
-        .dark .qr-popup { background: #1f2937; color: white; }
-        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; padding: 8px 20px; border-radius: 40px; font-size: 14px; z-index: 60; animation: fadeOut 2s forwards; }
-        @keyframes fadeOut { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
-        .mobile-instruction {
-            background-color: #fef3c7;
-            color: #92400e;
-            border-left: 4px solid #f59e0b;
-        }
-        .dark .mobile-instruction {
-            background-color: #422006;
-            color: #fde68a;
-            border-left-color: #f59e0b;
-        }
+        .quality-card { transition: all 0.2s ease; }
+        .quality-card:hover { transform: translateY(-2px); }
+        .dark .quality-card:hover { background: #374151; }
+        .light .quality-card:hover { background: #e5e7eb; }
+        .theme-transition { transition: background 0.3s, color 0.3s, border-color 0.3s; }
+        video { border-radius: 0.5rem; }
+        .toast { position: fixed; bottom: 20px; right: 20px; z-index: 1000; animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .tab-button { transition: all 0.2s ease; }
+        .tab-button.active { border-bottom: 3px solid #3b82f6; color: #3b82f6; }
+        .library-card { transition: all 0.2s ease; }
+        .library-card:hover { transform: translateY(-2px); }
+        .modal-overlay { animation: fadeIn 0.2s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .format-option { transition: all 0.2s ease; }
+        .format-option:hover { transform: scale(1.02); }
+        .share-dropdown { position: relative; display: inline-block; }
+        .share-dropdown-content { display: none; position: absolute; right: 0; top: 100%; z-index: 60; min-width: 200px; margin-top: 4px; }
+        .share-dropdown:hover .share-dropdown-content { display: block; }
+        .tech-section { transition: all 0.3s ease; }
+        .tech-entry { transition: all 0.2s ease; }
+        .tech-entry:hover { background: rgba(59, 130, 246, 0.05); }
+        .api-badge { font-size: 0.65rem; padding: 0.15rem 0.5rem; border-radius: 9999px; }
+        .api-badge.success { background: #10b98120; color: #10b981; }
+        .api-badge.error { background: #ef444420; color: #ef4444; }
+        .api-badge.info { background: #3b82f620; color: #3b82f6; }
+        .json-viewer { font-family: 'Courier New', monospace; font-size: 0.75rem; line-height: 1.5; }
+        .copy-btn { opacity: 0; transition: opacity 0.2s; }
+        .tech-entry:hover .copy-btn { opacity: 1; }
+        .discord-btn { background: linear-gradient(135deg, #5865F2 0%, #4752C4 100%); }
+        .discord-btn:hover { background: linear-gradient(135deg, #4752C4 0%, #3C45A5 100%); }
+        .mini-player { position: fixed; bottom: 20px; right: 20px; z-index: 100; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
     </style>
+    <script>
+        // Service Worker pour PWA (cache minimal)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swCode = `self.addEventListener('install', e => e.waitUntil(caches.open('x-video-v1').then(c => c.addAll(['/']))));
+self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));`;
+                const blob = new Blob([swCode], {type: 'application/javascript'});
+                const swUrl = URL.createObjectURL(blob);
+                navigator.serviceWorker.register(swUrl).then(reg => console.log('SW registered', reg));
+            });
+        }
+        // Manifest dynamique pour PWA
+        (function() {
+            const manifest = {
+                name: "X Video Downloader",
+                short_name: "X Video DL",
+                start_url: ".",
+                display: "standalone",
+                theme_color: "#1e1b4b",
+                background_color: "#111827",
+                icons: [
+                    { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231d4ed8'/%3E%3Ctext x='50' y='67' font-size='50' text-anchor='middle' fill='white' font-weight='bold'%3E📥%3C/text%3E%3C/svg%3E", sizes: "any", type: "image/svg+xml" }
+                ]
+            };
+            const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+            const manifestURL = URL.createObjectURL(blob);
+            const manifestLink = document.querySelector('link[rel="manifest"]');
+            if (manifestLink) manifestLink.setAttribute('href', manifestURL);
+        })();
+    </script>
 </head>
-<body class="bg-gray-950 text-gray-100 dark:bg-gray-950 dark:text-gray-100">
-    <div class="min-h-screen flex flex-col items-center px-4 py-4 md:py-6">
-        <div class="w-full max-w-4xl">
-            <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
-                <div>
-                    <h1 class="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">X Video Downloader</h1>
-                    <p class="text-gray-400 text-sm">Version mobile simple & fiable</p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <div id="serviceStatus" class="flex gap-2 text-xs">
-                        <span class="px-2 py-1 rounded-full bg-gray-800">🔍 vx</span>
-                        <span class="px-2 py-1 rounded-full bg-gray-800">🕊️ fx</span>
-                        <span class="px-2 py-1 rounded-full bg-gray-800">💾 twitsave</span>
+<body class="theme-transition dark:bg-gray-950 dark:text-gray-100 light:bg-gray-100 light:text-gray-900" id="body">
+    <div class="min-h-screen flex flex-col items-center justify-center px-4 py-6">
+        <div class="w-full max-w-5xl">
+            <!-- Header -->
+            <div class="text-center mb-6 relative">
+                <button id="themeToggle" class="absolute right-0 top-0 p-2 rounded-full dark:bg-gray-800 light:bg-gray-200 transition z-10">
+                    <svg id="themeIcon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                    </svg>
+                </button>
+                <h1 class="text-4xl font-extrabold bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                    X Video Downloader
+                </h1>
+                <p class="text-gray-400 text-sm mt-1">🎬 APERÇU | 📥 MP4/MP3/GIF | 💬 DISCORD | 📚 BIBLIOTHÈQUE | 📱 QR CODE | 🔧 PWA</p>
+            </div>
+
+            <!-- Raccourcis clavier info -->
+            <div class="text-center mb-4 text-xs text-gray-500">
+                ⌨️ Raccourcis : <kbd class="px-2 py-0.5 rounded bg-gray-700">Ctrl+Enter</kbd> Analyser | 
+                <kbd class="px-2 py-0.5 rounded bg-gray-700">D</kbd> Discord | 
+                <kbd class="px-2 py-0.5 rounded bg-gray-700">M</kbd> Mini-player
+            </div>
+
+            <!-- Onglets -->
+            <div class="flex gap-1 mb-4 border-b dark:border-gray-800 light:border-gray-300">
+                <button id="tabDownload" class="tab-button active px-4 py-2 font-medium text-sm">🔍 Télécharger</button>
+                <button id="tabLibrary" class="tab-button px-4 py-2 font-medium text-sm">📚 Bibliothèque</button>
+                <button id="tabHistory" class="tab-button px-4 py-2 font-medium text-sm">📜 Historique</button>
+                <button id="tabTech" class="tab-button px-4 py-2 font-medium text-sm">🔧 Technique</button>
+            </div>
+
+            <!-- Onglet Télécharger -->
+            <div id="contentDownload">
+                <div class="dark:bg-gray-900/80 light:bg-white/80 rounded-2xl border dark:border-gray-800 light:border-gray-200 p-5 backdrop-blur-sm">
+                    <div class="flex flex-col sm:flex-row gap-3 mb-5">
+                        <input type="text" id="tweetUrl" class="flex-1 dark:bg-gray-800 light:bg-gray-50 border dark:border-gray-700 light:border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition" placeholder="https://x.com/.../status/... ou https://x.com/i/status/...">
+                        <button id="pasteBtn" class="bg-gray-600 hover:bg-gray-700 px-4 py-3 rounded-xl transition shadow-lg" title="Coller depuis le presse-papier">📋 Coller</button>
+                        <button id="analyzeBtn" class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-6 py-3 rounded-xl font-semibold transition shadow-lg">
+                            Analyser (Ctrl+Enter)
+                        </button>
                     </div>
-                    <button id="darkModeToggle" class="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition" aria-label="Mode clair/sombre">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+
+                    <div id="statusArea">
+                        <div id="initialMessage" class="text-center py-10 text-gray-500 border border-dashed dark:border-gray-700 light:border-gray-300 rounded-xl">
+                            <svg class="w-12 h-12 mx-auto mb-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                            </svg>
+                            Collez l'URL d'un tweet public contenant une vidéo
+                        </div>
+                        <div id="loadingState" class="hidden text-center py-10">
+                            <div class="spinner mx-auto"></div>
+                            <p class="mt-3 text-blue-300">Analyse en cours...</p>
+                        </div>
+                        <div id="resultContainer" class="hidden"></div>
+                        <div id="errorContainer" class="hidden dark:bg-red-950/40 light:bg-red-100 border border-red-800 rounded-xl p-4"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Onglet Bibliothèque -->
+            <div id="contentLibrary" class="hidden">
+                <div class="dark:bg-gray-900/80 light:bg-white/80 rounded-2xl border dark:border-gray-800 light:border-gray-200 p-5 backdrop-blur-sm">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">📚 Ma Bibliothèque</h2>
+                        <button id="clearLibraryBtn" class="text-red-400 hover:text-red-300 text-sm">🗑️ Vider la bibliothèque</button>
+                    </div>
+                    <div id="libraryList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div id="emptyLibrary" class="col-span-full text-center py-10 text-gray-500 border border-dashed dark:border-gray-700 light:border-gray-300 rounded-xl">
+                            <svg class="w-12 h-12 mx-auto mb-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                            </svg>
+                            Aucune vidéo sauvegardée pour le moment
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Onglet Historique -->
+            <div id="contentHistory" class="hidden">
+                <div class="dark:bg-gray-900/80 light:bg-white/80 rounded-2xl border dark:border-gray-800 light:border-gray-200 p-5 backdrop-blur-sm">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">📜 Historique récent</h2>
+                        <button id="clearHistoryBtn" class="text-red-400 hover:text-red-300 text-sm">🗑️ Effacer l'historique</button>
+                    </div>
+                    <div id="historyList" class="space-y-2"></div>
+                    <div id="emptyHistory" class="text-center py-10 text-gray-500 border border-dashed dark:border-gray-700 light:border-gray-300 rounded-xl">
+                        <svg class="w-12 h-12 mx-auto mb-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Aucun historique pour le moment
+                    </div>
+                </div>
+            </div>
+
+            <!-- Onglet Technique -->
+            <div id="contentTech" class="hidden">
+                <div class="dark:bg-gray-900/80 light:bg-white/80 rounded-2xl border dark:border-gray-800 light:border-gray-200 p-5 backdrop-blur-sm">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">🔧 Réponses techniques des API</h2>
+                        <div class="flex gap-2">
+                            <button id="refreshTechBtn" class="text-blue-400 hover:text-blue-300 text-sm">🔄 Actualiser</button>
+                            <button id="clearTechBtn" class="text-red-400 hover:text-red-300 text-sm">🗑️ Vider</button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4 p-3 dark:bg-gray-800/50 light:bg-gray-100 rounded-lg">
+                        <p class="text-sm">
+                            <span class="font-semibold">APIs disponibles :</span>
+                            <span class="api-badge success">vxTwitter</span>
+                            <span class="api-badge success">fxTwitter</span>
+                            <span class="api-badge info">twitsave</span>
+                        </p>
+                        <p class="text-xs text-gray-500 mt-1">Les réponses sont mises en cache pour la session en cours.</p>
+                    </div>
+                    
+                    <div id="techLogsList" class="space-y-2">
+                        <div id="emptyTechLogs" class="text-center py-10 text-gray-500 border border-dashed dark:border-gray-700 light:border-gray-300 rounded-xl">
+                            <svg class="w-12 h-12 mx-auto mb-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6-4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2H7a2 2 0 01-2-2v-6"></path>
+                            </svg>
+                            Aucune réponse API enregistrée pour le moment
+                        </div>
+                    </div>
+                    
+                    <div id="techDetailPanel" class="hidden mt-4 p-4 dark:bg-gray-800 light:bg-gray-100 rounded-xl border dark:border-gray-700 light:border-gray-300">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 id="techDetailTitle" class="font-semibold"></h3>
+                            <div class="flex gap-2">
+                                <button id="copyTechDetail" class="copy-btn text-xs bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded">📋 Copier</button>
+                                <button id="closeTechDetail" class="text-gray-400 hover:text-gray-200">&times;</button>
+                            </div>
+                        </div>
+                        <pre id="techDetailContent" class="json-viewer dark:bg-gray-900 light:bg-gray-50 p-4 rounded-lg overflow-auto max-h-96"></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="text-center text-gray-600 text-xs mt-6">
+                🔧 Support: vxTwitter, fxTwitter, twitsave | 🎵 MP3 | 🎞️ GIF | 💬 Discord | 📚 Bibliothèque | 📱 QR Code | 📲 PWA installable
+            </div>
+        </div>
+    </div>
+
+    <!-- Mini Player -->
+    <div id="miniPlayer" class="mini-player hidden dark:bg-gray-900 light:bg-white rounded-xl border dark:border-gray-700 light:border-gray-300 overflow-hidden" style="width: 320px;">
+        <div class="flex justify-between items-center p-2 bg-gray-800 cursor-move" id="miniPlayerHeader">
+            <span class="text-xs font-semibold truncate flex-1" id="miniPlayerTitle">Mini Player</span>
+            <div class="flex gap-1">
+                <button id="miniPlayerPiP" class="text-xs bg-blue-600 hover:bg-blue-700 px-2 py-0.5 rounded">PiP</button>
+                <button id="miniPlayerClose" class="text-xs bg-red-600 hover:bg-red-700 px-2 py-0.5 rounded">✕</button>
+            </div>
+        </div>
+        <video id="miniPlayerVideo" controls class="w-full" style="max-height: 200px;"></video>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast hidden dark:bg-gray-800 light:bg-white rounded-lg shadow-lg px-4 py-2 text-sm border dark:border-gray-700 light:border-gray-300"></div>
+
+    <!-- Modal Format -->
+    <div id="formatModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 modal-overlay">
+        <div class="dark:bg-gray-900 light:bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">📥 Choisir le format</h3>
+                <button id="closeFormatModal" class="text-gray-400 hover:text-gray-200 text-2xl">&times;</button>
+            </div>
+            <p class="text-sm text-gray-400 mb-4">Sélectionnez le format de téléchargement :</p>
+            <div class="space-y-3">
+                <button class="format-option w-full flex items-center gap-4 p-4 rounded-xl border dark:border-gray-700 light:border-gray-300 hover:border-blue-500 transition" data-format="mp4">
+                    <span class="text-3xl">🎬</span>
+                    <div class="text-left">
+                        <p class="font-semibold">Vidéo MP4</p>
+                        <p class="text-xs text-gray-500">Format vidéo standard • Haute qualité</p>
+                    </div>
+                </button>
+                <button class="format-option w-full flex items-center gap-4 p-4 rounded-xl border dark:border-gray-700 light:border-gray-300 hover:border-purple-500 transition" data-format="mp3">
+                    <span class="text-3xl">🎵</span>
+                    <div class="text-left">
+                        <p class="font-semibold">Audio MP3/WAV</p>
+                        <p class="text-xs text-gray-500">Extraction audio • Format WAV</p>
+                    </div>
+                </button>
+                <button class="format-option w-full flex items-center gap-4 p-4 rounded-xl border dark:border-gray-700 light:border-gray-300 hover:border-green-500 transition" data-format="gif">
+                    <span class="text-3xl">🎞️</span>
+                    <div class="text-left">
+                        <p class="font-semibold">GIF animé</p>
+                        <p class="text-xs text-gray-500">Format .gif • Courte durée</p>
+                    </div>
+                </button>
+                <div class="pt-3 border-t dark:border-gray-700 light:border-gray-300">
+                    <p class="text-sm font-semibold mb-2 text-indigo-400">📤 Envoyer vers :</p>
+                    <button class="format-option w-full flex items-center gap-4 p-4 rounded-xl border dark:border-gray-700 light:border-gray-300 hover:border-indigo-500 transition discord-btn" data-format="discord">
+                        <span class="text-3xl">💬</span>
+                        <div class="text-left">
+                            <p class="font-semibold text-white">Envoyer sur Discord</p>
+                            <p class="text-xs text-indigo-200">Envoi direct de la vidéo • Format embarqué</p>
+                        </div>
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <div class="bg-white/5 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl border border-gray-200/20 dark:border-gray-800 p-5 shadow-xl">
-                <div class="flex flex-col sm:flex-row gap-3 mb-5">
-                    <input type="text" id="tweetUrl" class="flex-1 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="https://x.com/.../status/... ou https://x.com/i/status/...">
-                    <button id="analyzeBtn" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-xl font-semibold transition shadow-md">Analyser</button>
+    <!-- Modal QR Code -->
+    <div id="qrModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 modal-overlay">
+        <div class="dark:bg-gray-900 light:bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">📱 QR Code - Téléchargement direct</h3>
+                <button id="closeQRModal" class="text-gray-400 hover:text-gray-200 text-2xl">&times;</button>
+            </div>
+            <div id="qrcode" class="flex justify-center mb-4"></div>
+            <p class="text-xs text-gray-500">Scannez ce code avec votre téléphone pour obtenir la vidéo.</p>
+            <button id="closeQRModalBtn" class="mt-4 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition">Fermer</button>
+        </div>
+    </div>
+
+    <!-- Modal Discord Config -->
+    <div id="discordConfigModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 modal-overlay">
+        <div class="dark:bg-gray-900 light:bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">💬 Configuration Discord</h3>
+                <button id="closeDiscordConfig" class="text-gray-400 hover:text-gray-200 text-2xl">&times;</button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-2">URL du Webhook Discord</label>
+                    <input type="text" id="discordWebhookUrl" class="w-full dark:bg-gray-800 light:bg-gray-100 border dark:border-gray-700 light:border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition" placeholder="https://discord.com/api/webhooks/...">
+                    <p class="text-xs text-gray-500 mt-1">Paramètres du salon → Intégrations → Webhooks → Copier l'URL</p>
                 </div>
-
-                <div id="historySection" class="mb-5 hidden">
-                    <h3 class="text-sm font-semibold text-gray-400 mb-2">📁 Dernières vidéos</h3>
-                    <div id="historyList" class="flex flex-wrap gap-2"></div>
+                <div>
+                    <label class="block text-sm font-semibold mb-2">Nom du bot (optionnel)</label>
+                    <input type="text" id="discordBotName" class="w-full dark:bg-gray-800 light:bg-gray-100 border dark:border-gray-700 light:border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition" placeholder="X Video Downloader" value="X Video Downloader">
                 </div>
+                <div class="flex gap-3">
+                    <button id="testDiscordWebhook" class="flex-1 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition">🧪 Tester</button>
+                    <button id="saveDiscordConfig" class="flex-1 discord-btn px-4 py-2 rounded-lg transition font-semibold">💾 Sauvegarder</button>
+                </div>
+                <div id="discordConfigStatus" class="text-sm text-center hidden"></div>
+            </div>
+        </div>
+    </div>
 
-                <div id="statusArea">
-                    <div id="initialMessage" class="text-center py-10 text-gray-500 border border-dashed border-gray-300 dark:border-gray-700 rounded-xl">
-                        Collez l'URL d'un tweet public contenant une vidéo
+    <!-- Modal GIF -->
+    <div id="gifModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 modal-overlay">
+        <div class="dark:bg-gray-900 light:bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl">
+            <h3 class="text-lg font-bold mb-4">🎞️ Créer un GIF</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm mb-2">Durée (secondes)</label>
+                    <input type="range" id="gifDuration" min="1" max="10" value="3" class="w-full">
+                    <div class="flex justify-between text-xs text-gray-500">
+                        <span>1s</span><span id="durationValue">3s</span><span>10s</span>
                     </div>
-                    <div id="loadingState" class="hidden text-center py-10">
-                        <div class="spinner mx-auto"></div>
-                        <p class="mt-3 text-blue-300">Analyse en cours...</p>
+                </div>
+                <div>
+                    <label class="block text-sm mb-2">Qualité</label>
+                    <select id="gifQuality" class="w-full dark:bg-gray-800 light:bg-gray-100 rounded-lg px-3 py-2 border dark:border-gray-700 light:border-gray-300">
+                        <option value="low">Basse (fichier léger)</option>
+                        <option value="medium" selected>Moyenne</option>
+                        <option value="high">Haute (fichier lourd)</option>
+                    </select>
+                </div>
+                <div id="gifProgress" class="hidden">
+                    <div class="bg-gray-700 rounded-full h-2 overflow-hidden">
+                        <div id="gifProgressBar" class="bg-blue-500 h-full transition-all duration-300" style="width: 0%"></div>
                     </div>
-                    <div id="resultContainer" class="hidden"></div>
-                    <div id="errorContainer" class="hidden bg-red-100 dark:bg-red-950/40 border border-red-400 dark:border-red-800 rounded-xl p-4"></div>
+                    <p class="text-xs text-center mt-1">Création du GIF en cours...</p>
+                </div>
+                <div class="flex gap-3">
+                    <button id="cancelGif" class="flex-1 bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg transition">Annuler</button>
+                    <button id="createGif" class="flex-1 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition">✨ Créer le GIF</button>
                 </div>
             </div>
-            <div class="text-center text-gray-500 text-xs mt-6">📱 Astuce universelle : <strong>appuyez longuement sur le lien de la qualité choisie → "Enregistrer la vidéo"</strong> (fonctionne sur tous les mobiles)</div>
+        </div>
+    </div>
+
+    <!-- Modal Vidéo -->
+    <div id="videoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+        <div class="relative w-full max-w-4xl">
+            <button id="closeModal" class="absolute -top-10 right-0 text-white text-2xl hover:text-gray-300">&times;</button>
+            <video id="modalVideo" controls class="w-full rounded-xl" poster=""></video>
         </div>
     </div>
 
     <script>
-        (function(){
-            const urlInput = document.getElementById('tweetUrl');
-            const analyzeBtn = document.getElementById('analyzeBtn');
-            const initialDiv = document.getElementById('initialMessage');
-            const loadingDiv = document.getElementById('loadingState');
-            const resultDiv = document.getElementById('resultContainer');
-            const errorDiv = document.getElementById('errorContainer');
-            const historySection = document.getElementById('historySection');
-            const historyListDiv = document.getElementById('historyList');
-            const darkToggle = document.getElementById('darkModeToggle');
+        (function() {
+            // ==================== ÉTAT ====================
+            const body = document.getElementById('body');
+            const themeToggle = document.getElementById('themeToggle');
+            const themeIcon = document.getElementById('themeIcon');
+            let currentTheme = localStorage.getItem('theme') || 'dark';
+            let currentVariants = [];
+            let currentVideoData = null;
+            let pendingDownloadUrl = null;
+            let techLogs = JSON.parse(sessionStorage.getItem('techLogs') || '[]');
+            let selectedTechLogId = null;
+            let discordWebhookUrl = localStorage.getItem('discordWebhookUrl') || '';
+            let discordBotName = localStorage.getItem('discordBotName') || 'X Video Downloader';
+            let library = JSON.parse(localStorage.getItem('videoLibrary') || '[]');
+            let history = JSON.parse(localStorage.getItem('videoHistory') || '[]');
 
-            function hideAll() {
-                initialDiv.classList.add('hidden');
-                loadingDiv.classList.add('hidden');
-                resultDiv.classList.add('hidden');
-                errorDiv.classList.add('hidden');
-            }
-            function showLoading() { hideAll(); loadingDiv.classList.remove('hidden'); }
-            function showError(message, details = null) {
-                hideAll();
-                errorDiv.classList.remove('hidden');
-                let html = `<div class="flex items-start gap-2"><svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg><div><p class="font-semibold">${escapeHtml(message)}</p>${details ? `<p class="text-sm text-red-400/80 mt-1">${escapeHtml(details)}</p>` : ''}</div></div>`;
-                errorDiv.innerHTML = html;
-            }
-            function escapeHtml(str) { return String(str).replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
-            function showToast(msg) {
-                let toast = document.createElement('div');
-                toast.className = 'toast';
-                toast.innerText = msg;
-                document.body.appendChild(toast);
-                setTimeout(() => toast.remove(), 2000);
-            }
-
-            // Mode clair/sombre
-            function setTheme(theme) {
-                if (theme === 'dark') {
-                    document.documentElement.classList.add('dark');
-                    document.body.classList.remove('bg-gray-100', 'text-gray-900');
-                    document.body.classList.add('bg-gray-950', 'text-gray-100');
+            // Helper sécurisé pour classList
+            function safeClassList(id, method, ...classes) {
+                const el = document.getElementById(id);
+                if (el && el.classList) {
+                    el.classList[method](...classes);
                 } else {
-                    document.documentElement.classList.remove('dark');
-                    document.body.classList.remove('bg-gray-950', 'text-gray-100');
-                    document.body.classList.add('bg-gray-100', 'text-gray-900');
+                    console.warn(`Element #${id} not found for classList.${method}`);
+                }
+            }
+
+            // ==================== THÈME ====================
+            function setTheme(theme) {
+                currentTheme = theme;
+                if (theme === 'dark') {
+                    body.classList.remove('light'); body.classList.add('dark');
+                    if (themeIcon) themeIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>';
+                } else {
+                    body.classList.remove('dark'); body.classList.add('light');
+                    if (themeIcon) themeIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>';
                 }
                 localStorage.setItem('theme', theme);
             }
-            function initTheme() {
-                const saved = localStorage.getItem('theme');
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                if (saved === 'dark' || (!saved && prefersDark)) setTheme('dark');
-                else setTheme('light');
-            }
-            darkToggle.addEventListener('click', () => {
-                const isDark = document.documentElement.classList.contains('dark');
-                setTheme(isDark ? 'light' : 'dark');
-            });
-            initTheme();
+            if (themeToggle) themeToggle.onclick = () => setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+            setTheme(currentTheme);
 
-            // Service status (optionnel)
-            async function checkServiceStatus() {
-                const statusDivs = {
-                    vx: document.querySelector('#serviceStatus span:nth-child(1)'),
-                    fx: document.querySelector('#serviceStatus span:nth-child(2)'),
-                    ts: document.querySelector('#serviceStatus span:nth-child(3)')
+            function showToast(message, type = 'info') {
+                const toast = document.getElementById('toast');
+                if (toast) {
+                    toast.textContent = message;
+                    toast.classList.remove('hidden');
+                    setTimeout(() => toast.classList.add('hidden'), 3000);
+                } else console.warn('Toast element missing');
+            }
+
+            function escapeHtml(str) { 
+                return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m);
+            }
+
+            function copyToClipboard(text) {
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(text).then(() => showToast('✅ Copié !'));
+                } else {
+                    const ta = document.createElement('textarea');
+                    ta.value = text; document.body.appendChild(ta);
+                    ta.select(); document.execCommand('copy');
+                    document.body.removeChild(ta); showToast('✅ Copié !');
+                }
+            }
+
+            // ==================== ONGLETS ====================
+            const tabs = {
+                download: { btn: document.getElementById('tabDownload'), content: document.getElementById('contentDownload') },
+                library: { btn: document.getElementById('tabLibrary'), content: document.getElementById('contentLibrary') },
+                history: { btn: document.getElementById('tabHistory'), content: document.getElementById('contentHistory') },
+                tech: { btn: document.getElementById('tabTech'), content: document.getElementById('contentTech') }
+            };
+
+            function switchTab(name) {
+                Object.keys(tabs).forEach(k => {
+                    if (tabs[k].btn) tabs[k].btn.classList.remove('active');
+                    if (tabs[k].content) tabs[k].content.classList.add('hidden');
+                });
+                if (tabs[name].btn) tabs[name].btn.classList.add('active');
+                if (tabs[name].content) tabs[name].content.classList.remove('hidden');
+                if (name === 'library') renderLibrary();
+                if (name === 'history') renderHistory();
+                if (name === 'tech') renderTechLogs();
+            }
+
+            if (tabs.download.btn) tabs.download.btn.onclick = () => switchTab('download');
+            if (tabs.library.btn) tabs.library.btn.onclick = () => switchTab('library');
+            if (tabs.history.btn) tabs.history.btn.onclick = () => switchTab('history');
+            if (tabs.tech.btn) tabs.tech.btn.onclick = () => switchTab('tech');
+
+            // ==================== COLLER ====================
+            const pasteBtn = document.getElementById('pasteBtn');
+            if (pasteBtn) {
+                pasteBtn.onclick = async () => {
+                    try {
+                        const text = await navigator.clipboard.readText();
+                        const urlInput = document.getElementById('tweetUrl');
+                        if (text && (text.includes('x.com') || text.includes('twitter.com')) && urlInput) {
+                            urlInput.value = text.trim();
+                            showToast('📋 URL collée !');
+                        } else {
+                            showToast('❌ Aucune URL Twitter trouvée dans le presse-papier');
+                        }
+                    } catch(e) {
+                        showToast('❌ Impossible de lire le presse-papier (autorisation ?)');
+                    }
                 };
-                try { const res = await fetch('https://api.vxtwitter.com/elonmusk/status/1', { method: 'HEAD' }); statusDivs.vx.innerHTML = (res.ok || res.status===404) ? '✅ vx' : '⚠️ vx'; } catch(e) { statusDivs.vx.innerHTML = '⚠️ vx'; }
-                try { const res = await fetch('https://api.fxtwitter.com/elonmusk/status/1', { method: 'HEAD' }); statusDivs.fx.innerHTML = (res.ok || res.status===404) ? '✅ fx' : '⚠️ fx'; } catch(e) { statusDivs.fx.innerHTML = '⚠️ fx'; }
-                try { const res = await fetch('https://twitsave.app/api/get?url=https://x.com/a/status/1', { method: 'HEAD' }); statusDivs.ts.innerHTML = (res.ok || res.status===400) ? '✅ twitsave' : '⚠️ twitsave'; } catch(e) { statusDivs.ts.innerHTML = '⚠️ twitsave'; }
             }
-            checkServiceStatus();
 
-            // Historique localStorage
-            function saveHistory(tweetUrl, videoUrl, author, thumbnail, qualityLabel) {
-                let history = JSON.parse(localStorage.getItem('xdownloader_history') || '[]');
-                const newEntry = { id: Date.now(), tweetUrl, videoUrl, author: author || 'Anonyme', thumbnail: thumbnail || '', qualityLabel, timestamp: new Date().toLocaleString() };
-                history = [newEntry, ...history.filter(h => h.tweetUrl !== tweetUrl)].slice(0, 5);
-                localStorage.setItem('xdownloader_history', JSON.stringify(history));
-                renderHistory();
-            }
-            function renderHistory() {
-                const history = JSON.parse(localStorage.getItem('xdownloader_history') || '[]');
-                if (history.length === 0) { historySection.classList.add('hidden'); return; }
-                historySection.classList.remove('hidden');
-                historyListDiv.innerHTML = history.map(item => `
-                    <button data-url="${escapeHtml(item.tweetUrl)}" class="history-item bg-gray-200 dark:bg-gray-800 hover:bg-blue-100 dark:hover:bg-gray-700 rounded-full px-3 py-1 text-xs flex items-center gap-1 transition">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.5-4.5M15 10l-4.5 4.5M15 10l-4.5-4.5"/></svg>
-                        ${escapeHtml(item.author)} • ${item.qualityLabel}
-                    </button>
-                `).join('');
-                document.querySelectorAll('.history-item').forEach(btn => {
-                    btn.addEventListener('click', () => { urlInput.value = btn.dataset.url; analyzeTweet(); });
+            // ==================== MINI PLAYER ====================
+            const miniPlayer = document.getElementById('miniPlayer');
+            const miniPlayerVideo = document.getElementById('miniPlayerVideo');
+            const miniPlayerTitle = document.getElementById('miniPlayerTitle');
+            let isDragging = false, dragOffsetX = 0, dragOffsetY = 0;
+
+            const miniPlayerHeader = document.getElementById('miniPlayerHeader');
+            if (miniPlayerHeader) {
+                miniPlayerHeader.addEventListener('mousedown', (e) => {
+                    if (!miniPlayer) return;
+                    isDragging = true;
+                    dragOffsetX = e.clientX - miniPlayer.offsetLeft;
+                    dragOffsetY = e.clientY - miniPlayer.offsetTop;
+                    miniPlayer.style.cursor = 'grabbing';
                 });
             }
 
-            // Extraction API (identique)
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging || !miniPlayer) return;
+                miniPlayer.style.left = (e.clientX - dragOffsetX) + 'px';
+                miniPlayer.style.top = (e.clientY - dragOffsetY) + 'px';
+                miniPlayer.style.right = 'auto';
+                miniPlayer.style.bottom = 'auto';
+            });
+
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+                if (miniPlayer) miniPlayer.style.cursor = '';
+            });
+
+            function showMiniPlayer(videoUrl, title) {
+                if (!miniPlayer || !miniPlayerVideo || !miniPlayerTitle) return;
+                miniPlayer.classList.remove('hidden');
+                miniPlayerTitle.textContent = title || 'Mini Player';
+                miniPlayerVideo.src = videoUrl;
+                miniPlayerVideo.play().catch(() => {});
+                showToast('📺 Mini-player activé (M pour fermer)');
+            }
+
+            const miniClose = document.getElementById('miniPlayerClose');
+            if (miniClose) miniClose.onclick = () => {
+                if (miniPlayer) miniPlayer.classList.add('hidden');
+                if (miniPlayerVideo) { miniPlayerVideo.pause(); miniPlayerVideo.src = ''; }
+            };
+
+            const miniPiP = document.getElementById('miniPlayerPiP');
+            if (miniPiP) {
+                miniPiP.onclick = () => {
+                    if (!miniPlayerVideo) return;
+                    if (document.pictureInPictureElement) {
+                        document.exitPictureInPicture();
+                    } else if (miniPlayerVideo.src) {
+                        miniPlayerVideo.requestPictureInPicture().catch(() => {
+                            showToast('❌ Picture-in-Picture non supporté');
+                        });
+                    }
+                };
+            }
+
+            // ==================== RACCOURCIS CLAVIER ====================
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    e.preventDefault();
+                    analyzeTweet();
+                }
+                if (e.key === 'd' || e.key === 'D') {
+                    if (!e.target.closest('input, textarea') && currentVideoData) {
+                        e.preventDefault();
+                        showFormatModal(currentVideoData.url);
+                        setTimeout(() => {
+                            const discordBtn = document.querySelector('[data-format="discord"]');
+                            if (discordBtn) discordBtn.click();
+                        }, 300);
+                    }
+                }
+                if (e.key === 'm' || e.key === 'M') {
+                    if (!e.target.closest('input, textarea') && currentVideoData) {
+                        e.preventDefault();
+                        if (miniPlayer && miniPlayer.classList.contains('hidden')) {
+                            showMiniPlayer(currentVideoData.url, currentVideoData.title);
+                        } else if (miniPlayer) {
+                            miniPlayer.classList.add('hidden');
+                            if (miniPlayerVideo) miniPlayerVideo.pause();
+                        }
+                    }
+                }
+            });
+
+            // ==================== DISCORD ====================
+            const discordWebhookInput = document.getElementById('discordWebhookUrl');
+            const discordBotNameInput = document.getElementById('discordBotName');
+            if (discordWebhookInput) discordWebhookInput.value = discordWebhookUrl;
+            if (discordBotNameInput) discordBotNameInput.value = discordBotName;
+
+            const saveDiscord = document.getElementById('saveDiscordConfig');
+            if (saveDiscord) {
+                saveDiscord.onclick = () => {
+                    const url = discordWebhookInput ? discordWebhookInput.value.trim() : '';
+                    const name = discordBotNameInput ? discordBotNameInput.value.trim() : '';
+                    
+                    if (!url.startsWith('https://discord.com/api/webhooks/')) {
+                        const statusDiv = document.getElementById('discordConfigStatus');
+                        if (statusDiv) {
+                            statusDiv.textContent = '❌ URL de webhook invalide';
+                            statusDiv.className = 'text-red-400 text-sm text-center block';
+                            statusDiv.classList.remove('hidden');
+                        }
+                        return;
+                    }
+                    
+                    discordWebhookUrl = url;
+                    discordBotName = name || 'X Video Downloader';
+                    localStorage.setItem('discordWebhookUrl', discordWebhookUrl);
+                    localStorage.setItem('discordBotName', discordBotName);
+                    
+                    const statusDiv = document.getElementById('discordConfigStatus');
+                    if (statusDiv) {
+                        statusDiv.textContent = '✅ Configuration sauvegardée !';
+                        statusDiv.className = 'text-green-400 text-sm text-center block';
+                        statusDiv.classList.remove('hidden');
+                    }
+                    
+                    setTimeout(() => {
+                        const modal = document.getElementById('discordConfigModal');
+                        if (modal) modal.classList.add('hidden');
+                    }, 1000);
+                };
+            }
+
+            const testDiscord = document.getElementById('testDiscordWebhook');
+            if (testDiscord) {
+                testDiscord.onclick = async () => {
+                    const url = discordWebhookInput ? discordWebhookInput.value.trim() : '';
+                    if (!url) {
+                        showToast('❌ Veuillez entrer une URL de webhook');
+                        return;
+                    }
+                    
+                    try {
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                content: '🧪 **Test de connexion réussi !**\n\nVotre webhook Discord est correctement configuré avec X Video Downloader.',
+                                username: discordBotName,
+                                embeds: [{
+                                    title: '✅ Test Webhook',
+                                    description: 'Le webhook fonctionne parfaitement !',
+                                    color: 0x00ff00,
+                                    footer: { text: 'X Video Downloader Ultimate' },
+                                    timestamp: new Date().toISOString()
+                                }]
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            const statusDiv = document.getElementById('discordConfigStatus');
+                            if (statusDiv) {
+                                statusDiv.textContent = '✅ Test réussi ! Webhook fonctionnel';
+                                statusDiv.className = 'text-green-400 text-sm text-center block';
+                                statusDiv.classList.remove('hidden');
+                            }
+                            showToast('✅ Test Discord réussi !');
+                        } else {
+                            throw new Error(`HTTP ${response.status}`);
+                        }
+                    } catch(e) {
+                        const statusDiv = document.getElementById('discordConfigStatus');
+                        if (statusDiv) {
+                            statusDiv.textContent = '❌ Erreur: ' + e.message;
+                            statusDiv.className = 'text-red-400 text-sm text-center block';
+                            statusDiv.classList.remove('hidden');
+                        }
+                    }
+                };
+            }
+
+            const closeDiscordConfig = document.getElementById('closeDiscordConfig');
+            if (closeDiscordConfig) closeDiscordConfig.onclick = () => {
+                const modal = document.getElementById('discordConfigModal');
+                if (modal) modal.classList.add('hidden');
+            };
+
+            async function sendToDiscordDirect(videoUrl, title, description = '') {
+                if (!discordWebhookUrl) {
+                    const modal = document.getElementById('discordConfigModal');
+                    if (modal) modal.classList.remove('hidden');
+                    showToast('⚠️ Configurez d\'abord le webhook Discord');
+                    return false;
+                }
+
+                try {
+                    showToast('📤 Envoi vers Discord en cours...');
+                    const videoResponse = await fetch(videoUrl);
+                    if (!videoResponse.ok) throw new Error('Impossible de télécharger la vidéo');
+                    const videoBlob = await videoResponse.blob();
+                    
+                    if (videoBlob.size > 25 * 1024 * 1024) {
+                        showToast('⚠️ Vidéo trop volumineuse (>25MB). Envoi du lien...');
+                        const linkResponse = await fetch(discordWebhookUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                content: `**${title || '🎬 Nouvelle vidéo'}**\n${videoUrl}`,
+                                username: discordBotName,
+                                embeds: [{
+                                    title: title?.substring(0, 256) || 'Vidéo X',
+                                    description: description?.substring(0, 2048) || 'Cliquez pour voir la vidéo',
+                                    color: 0x1da1f2,
+                                    url: videoUrl,
+                                    footer: { text: '📥 X Video Downloader' },
+                                    timestamp: new Date().toISOString()
+                                }]
+                            })
+                        });
+                        if (linkResponse.ok) {
+                            showToast('✅ Lien envoyé sur Discord');
+                            return true;
+                        }
+                        return false;
+                    }
+
+                    const formData = new FormData();
+                    formData.append('file', videoBlob, 'twitter_video.mp4');
+                    formData.append('payload_json', JSON.stringify({
+                        content: `**${title || '🎬 Nouvelle vidéo X'}**\n${description || ''}`,
+                        username: discordBotName,
+                        embeds: [{
+                            title: '📥 Vidéo téléchargée depuis X',
+                            description: 'Vidéo envoyée directement via X Video Downloader',
+                            color: 0x5865F2,
+                            footer: { text: 'X Video Downloader Ultimate' },
+                            timestamp: new Date().toISOString()
+                        }]
+                    }));
+
+                    const response = await fetch(discordWebhookUrl, { method: 'POST', body: formData });
+                    if (response.ok) {
+                        showToast('✅ Vidéo envoyée sur Discord !');
+                        return true;
+                    } else {
+                        throw new Error(`Erreur ${response.status}`);
+                    }
+                } catch(e) {
+                    console.error('Discord error:', e);
+                    showToast('❌ Erreur Discord: ' + e.message);
+                    return false;
+                }
+            }
+
+            // ==================== QR CODE ====================
+            function showQRCode(url) {
+                const modal = document.getElementById('qrModal');
+                const qrContainer = document.getElementById('qrcode');
+                if (!modal || !qrContainer) return;
+                qrContainer.innerHTML = '';
+                new QRCode(qrContainer, {
+                    text: url,
+                    width: 256,
+                    height: 256,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+                modal.classList.remove('hidden');
+            }
+            const closeQR = document.getElementById('closeQRModal');
+            const closeQRBtn = document.getElementById('closeQRModalBtn');
+            if (closeQR) closeQR.onclick = () => { const m = document.getElementById('qrModal'); if (m) m.classList.add('hidden'); };
+            if (closeQRBtn) closeQRBtn.onclick = () => { const m = document.getElementById('qrModal'); if (m) m.classList.add('hidden'); };
+
+            // ==================== SHARE ====================
+            function shareVideo(url, title) {
+                return [
+                    { name: 'Copier le lien', icon: '📋', action: () => copyToClipboard(url) },
+                    { name: 'QR Code', icon: '📱', action: () => showQRCode(url) },
+                    { name: 'Twitter/X', icon: '𝕏', action: () => window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title || '')}`, '_blank') },
+                    { name: 'Facebook', icon: '📘', action: () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank') },
+                    { name: 'WhatsApp', icon: '💬', action: () => window.open(`https://wa.me/?text=${encodeURIComponent(title + ' ' + url)}`, '_blank') }
+                ];
+            }
+
+            function createShareButton(url, title) {
+                const container = document.createElement('div');
+                container.className = 'share-dropdown';
+                const button = document.createElement('button');
+                button.className = 'bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded-lg text-sm transition';
+                button.innerHTML = '🔗 Partager';
+                const dropdown = document.createElement('div');
+                dropdown.className = 'share-dropdown-content dark:bg-gray-800 light:bg-white border dark:border-gray-700 light:border-gray-300 rounded-lg shadow-2xl';
+                shareVideo(url, title).forEach(option => {
+                    const item = document.createElement('button');
+                    item.className = 'w-full text-left px-4 py-2 hover:bg-blue-600/20 transition flex items-center gap-2 text-sm';
+                    item.innerHTML = `<span>${option.icon}</span> ${option.name}`;
+                    item.onclick = (e) => {
+                        e.stopPropagation();
+                        option.action();
+                        if (option.name === 'Copier le lien') showToast('✅ Lien copié !');
+                    };
+                    dropdown.appendChild(item);
+                });
+                container.appendChild(button);
+                container.appendChild(dropdown);
+                return container;
+            }
+
+            // ==================== MODAL FORMAT ====================
+            function showFormatModal(videoUrl) {
+                pendingDownloadUrl = videoUrl;
+                const modal = document.getElementById('formatModal');
+                if (modal) modal.classList.remove('hidden');
+            }
+
+            const closeFormat = document.getElementById('closeFormatModal');
+            if (closeFormat) closeFormat.onclick = () => {
+                const modal = document.getElementById('formatModal');
+                if (modal) modal.classList.add('hidden');
+                pendingDownloadUrl = null;
+            };
+
+            document.querySelectorAll('.format-option').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const format = btn.dataset.format;
+                    const modal = document.getElementById('formatModal');
+                    if (modal) modal.classList.add('hidden');
+                    
+                    if (format === 'mp4') {
+                        if (pendingDownloadUrl) window.open(pendingDownloadUrl, '_blank');
+                        showToast("📥 Téléchargement MP4 démarré");
+                    } else if (format === 'mp3') {
+                        if (pendingDownloadUrl) downloadAsMP3(pendingDownloadUrl, 'video_audio.wav');
+                    } else if (format === 'gif') {
+                        if (pendingDownloadUrl) showGifModal(pendingDownloadUrl);
+                    } else if (format === 'discord') {
+                        const title = currentVideoData?.title || 'Vidéo X';
+                        const author = currentVideoData?.author ? `@${currentVideoData.author}` : '';
+                        if (pendingDownloadUrl) sendToDiscordDirect(pendingDownloadUrl, title, author);
+                    }
+                    pendingDownloadUrl = null;
+                });
+            });
+
+            // ==================== AUDIO ====================
+            async function downloadAsMP3(videoUrl, filename) {
+                try {
+                    showToast("🎵 Conversion MP3 en cours...");
+                    const response = await fetch(videoUrl);
+                    const blob = await response.blob();
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const arrayBuffer = await blob.arrayBuffer();
+                    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                    const wavBlob = audioBufferToWav(audioBuffer);
+                    saveAs(wavBlob, filename.replace('.mp3', '.wav'));
+                    showToast("✅ Audio extrait (format WAV)");
+                } catch(e) {
+                    showToast("❌ Erreur extraction audio: " + e.message);
+                }
+            }
+
+            function audioBufferToWav(buffer) {
+                const numChannels = buffer.numberOfChannels;
+                const sampleRate = buffer.sampleRate;
+                const format = 1;
+                const bitDepth = 16;
+                let data = buffer.getChannelData(0);
+                let samples = data.length;
+                let bufferLength = samples * (bitDepth / 8);
+                let wavBuffer = new ArrayBuffer(44 + bufferLength);
+                let view = new DataView(wavBuffer);
+                writeString(view, 0, 'RIFF');
+                view.setUint32(4, 36 + bufferLength, true);
+                writeString(view, 8, 'WAVE');
+                writeString(view, 12, 'fmt ');
+                view.setUint32(16, 16, true);
+                view.setUint16(20, format, true);
+                view.setUint16(22, numChannels, true);
+                view.setUint32(24, sampleRate, true);
+                view.setUint32(28, sampleRate * numChannels * (bitDepth / 8), true);
+                view.setUint16(32, numChannels * (bitDepth / 8), true);
+                view.setUint16(34, bitDepth, true);
+                writeString(view, 36, 'data');
+                view.setUint32(40, bufferLength, true);
+                let offset = 44;
+                for (let i = 0; i < samples; i++) {
+                    let sample = Math.max(-1, Math.min(1, data[i]));
+                    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+                    offset += 2;
+                }
+                return new Blob([wavBuffer], { type: 'audio/wav' });
+            }
+
+            function writeString(view, offset, str) { 
+                for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i)); 
+            }
+
+            // ==================== GIF ====================
+            function showGifModal(videoUrl) {
+                const modal = document.getElementById('gifModal');
+                if (!modal) return;
+                modal.classList.remove('hidden');
+                const progressDiv = document.getElementById('gifProgress');
+                if (progressDiv) progressDiv.classList.add('hidden');
+                const createBtn = document.getElementById('createGif');
+                if (createBtn) createBtn.onclick = () => createGif(videoUrl);
+                const cancelBtn = document.getElementById('cancelGif');
+                if (cancelBtn) cancelBtn.onclick = () => modal.classList.add('hidden');
+                const durationSlider = document.getElementById('gifDuration');
+                if (durationSlider) {
+                    durationSlider.oninput = (e) => {
+                        const valSpan = document.getElementById('durationValue');
+                        if (valSpan) valSpan.textContent = e.target.value + 's';
+                    };
+                }
+            }
+
+            function encodeGIF(frames, width, height, delays) {
+                // Same as before, kept for brevity (no changes)
+                const header = new Uint8Array([0x47,0x49,0x46,0x38,0x39,0x61, width&0xFF, (width>>8)&0xFF, height&0xFF, (height>>8)&0xFF, 0xF7,0x00,0x00]);
+                const colorTable = new Uint8Array(256*3);
+                const colorMap = new Map();
+                let colorIndex = 1;
+                colorTable[0]=colorTable[1]=colorTable[2]=0;
+                function getColorIndex(r,g,b) {
+                    const key=`${r},${g},${b}`;
+                    if(colorMap.has(key)) return colorMap.get(key);
+                    if(colorIndex<256){ colorTable[colorIndex*3]=r; colorTable[colorIndex*3+1]=g; colorTable[colorIndex*3+2]=b; colorMap.set(key,colorIndex); return colorIndex++; }
+                    let minDist=Infinity, closest=0;
+                    for(let i=0;i<256;i++){ const dr=r-colorTable[i*3], dg=g-colorTable[i*3+1], db=b-colorTable[i*3+2]; const dist=dr*dr+dg*dg+db*db; if(dist<minDist){ minDist=dist; closest=i; } }
+                    return closest;
+                }
+                const frameDataArray=[];
+                for(const frame of frames){
+                    const ctx=frame.getContext('2d');
+                    const imgData=ctx.getImageData(0,0,width,height);
+                    const pixels=imgData.data;
+                    const indices=new Uint8Array(width*height);
+                    for(let i=0;i<pixels.length;i+=4) indices[i/4]=getColorIndex(pixels[i],pixels[i+1],pixels[i+2]);
+                    frameDataArray.push(lzwEncode(indices,8));
+                }
+                const parts=[header,colorTable];
+                parts.push(new Uint8Array([0x21,0xFF,0x0B,0x4E,0x45,0x54,0x53,0x43,0x41,0x50,0x45,0x32,0x2E,0x30,0x03,0x01,0x00,0x00,0x00]));
+                for(let i=0;i<frameDataArray.length;i++){
+                    const delay=delays[i]||10;
+                    parts.push(new Uint8Array([0x21,0xF9,0x04,0x09,delay&0xFF,(delay>>8)&0xFF,0x00,0x00]));
+                    parts.push(new Uint8Array([0x2C,0x00,0x00,0x00,0x00,width&0xFF,(width>>8)&0xFF,height&0xFF,(height>>8)&0xFF,0x00]));
+                    parts.push(new Uint8Array([8]));
+                    const data=frameDataArray[i];
+                    for(let j=0;j<data.length;j+=255){ const chunk=data.slice(j,j+255); parts.push(new Uint8Array([chunk.length])); parts.push(chunk); }
+                    parts.push(new Uint8Array([0x00]));
+                }
+                parts.push(new Uint8Array([0x3B]));
+                let total=parts.reduce((s,p)=>s+p.length,0);
+                const res=new Uint8Array(total);
+                let off=0;
+                parts.forEach(p=>{ res.set(p,off); off+=p.length; });
+                return new Blob([res],{type:'image/gif'});
+            }
+
+            function lzwEncode(data,minCodeSize){
+                const clearCode=1<<minCodeSize;
+                const eoiCode=clearCode+1;
+                let codeSize=minCodeSize+1;
+                const maxCode=(1<<codeSize)-1;
+                const dict=new Map();
+                let nextCode=eoiCode+1;
+                for(let i=0;i<clearCode;i++) dict.set(String.fromCharCode(i),i);
+                const output=[];
+                let bitBuffer=0,bits=0;
+                function writeCode(code){ bitBuffer|=(code<<bits); bits+=codeSize; while(bits>=8){ output.push(bitBuffer&0xFF); bitBuffer>>=8; bits-=8; } }
+                output.push(minCodeSize);
+                writeCode(clearCode);
+                let w='';
+                for(let i=0;i<data.length;i++){
+                    const c=String.fromCharCode(data[i]);
+                    const wc=w+c;
+                    if(dict.has(wc)) w=wc;
+                    else{
+                        writeCode(dict.get(w));
+                        if(nextCode<4096){
+                            dict.set(wc,nextCode++);
+                            if(nextCode>maxCode && codeSize<12) codeSize++;
+                        }else{
+                            writeCode(clearCode);
+                            dict.clear();
+                            for(let j=0;j<clearCode;j++) dict.set(String.fromCharCode(j),j);
+                            nextCode=eoiCode+1;
+                            codeSize=minCodeSize+1;
+                        }
+                        w=c;
+                    }
+                }
+                if(w!=='') writeCode(dict.get(w));
+                writeCode(eoiCode);
+                if(bits>0) output.push(bitBuffer&0xFF);
+                return new Uint8Array(output);
+            }
+
+            async function createGif(videoUrl) {
+                const duration = parseInt(document.getElementById('gifDuration')?.value || '3');
+                const quality = document.getElementById('gifQuality')?.value || 'medium';
+                const progressDiv = document.getElementById('gifProgress');
+                const progressBar = document.getElementById('gifProgressBar');
+                if (progressDiv) progressDiv.classList.remove('hidden');
+                if (progressBar) progressBar.style.width = '0%';
+                try {
+                    showToast("🎞️ Création du GIF en cours...");
+                    if (progressBar) progressBar.style.width = '10%';
+                    const video = document.createElement('video');
+                    video.crossOrigin = 'anonymous';
+                    video.src = videoUrl;
+                    video.muted = true;
+                    video.preload = 'auto';
+                    await new Promise((resolve, reject) => {
+                        video.onloadedmetadata = resolve;
+                        video.onerror = reject;
+                        setTimeout(() => reject(new Error('Timeout')), 5000);
+                        video.load();
+                    });
+                    if (progressBar) progressBar.style.width = '20%';
+                    const fps = quality === 'high' ? 12 : quality === 'medium' ? 8 : 5;
+                    const totalFrames = Math.max(3, Math.min(30, Math.round(duration * fps)));
+                    const maxWidth = quality === 'high' ? 360 : quality === 'medium' ? 280 : 200;
+                    const ratio = maxWidth / video.videoWidth;
+                    const finalWidth = Math.round(maxWidth) - (Math.round(maxWidth) % 2);
+                    const finalHeight = Math.round(video.videoHeight * ratio) - (Math.round(video.videoHeight * ratio) % 2);
+                    const frames = [];
+                    const delays = [];
+                    const canvas = document.createElement('canvas');
+                    canvas.width = finalWidth;
+                    canvas.height = finalHeight;
+                    const ctx = canvas.getContext('2d');
+                    for (let i = 0; i < totalFrames; i++) {
+                        const time = (i / totalFrames) * Math.min(duration, video.duration);
+                        video.currentTime = time;
+                        await new Promise((resolve, reject) => {
+                            const timeout = setTimeout(() => reject(new Error('Seek timeout')), 3000);
+                            const seekHandler = () => {
+                                clearTimeout(timeout);
+                                video.removeEventListener('seeked', seekHandler);
+                                ctx.drawImage(video, 0, 0, finalWidth, finalHeight);
+                                const frameCanvas = document.createElement('canvas');
+                                frameCanvas.width = finalWidth;
+                                frameCanvas.height = finalHeight;
+                                frameCanvas.getContext('2d').drawImage(canvas, 0, 0);
+                                frames.push(frameCanvas);
+                                delays.push(Math.round(100 / fps));
+                                resolve();
+                            };
+                            video.addEventListener('seeked', seekHandler);
+                        });
+                        if (progressBar) progressBar.style.width = (20 + ((i / totalFrames) * 70)) + '%';
+                    }
+                    if (progressBar) progressBar.style.width = '95%';
+                    const gifBlob = encodeGIF(frames, finalWidth, finalHeight, delays);
+                    if (progressBar) progressBar.style.width = '100%';
+                    saveAs(gifBlob, 'twitter_video.gif');
+                    const modal = document.getElementById('gifModal');
+                    if (modal) modal.classList.add('hidden');
+                    showToast("✅ GIF créé avec succès !");
+                } catch(e) {
+                    console.error('Erreur GIF:', e);
+                    showToast("❌ Erreur création GIF: " + e.message);
+                    const modal = document.getElementById('gifModal');
+                    if (modal) modal.classList.add('hidden');
+                }
+            }
+
+            // ==================== BIBLIOTHÈQUE ====================
+            function saveToLibrary(videoData) {
+                const exists = library.some(item => item.url === videoData.url);
+                if (!exists) {
+                    library.unshift({ ...videoData, savedAt: new Date().toISOString(), id: Date.now().toString() });
+                    if (library.length > 50) library = library.slice(0, 50);
+                    localStorage.setItem('videoLibrary', JSON.stringify(library));
+                    showToast('✅ Vidéo ajoutée à la bibliothèque');
+                    return true;
+                }
+                showToast('ℹ️ Vidéo déjà dans la bibliothèque');
+                return false;
+            }
+
+            function removeFromLibrary(id) {
+                library = library.filter(item => item.id !== id);
+                localStorage.setItem('videoLibrary', JSON.stringify(library));
+                renderLibrary();
+                showToast('🗑️ Vidéo supprimée');
+            }
+
+            function renderLibrary() {
+                const container = document.getElementById('libraryList');
+                const emptyMsg = document.getElementById('emptyLibrary');
+                if (!container) return;
+                if (library.length === 0) {
+                    container.innerHTML = '';
+                    if (emptyMsg) {
+                        container.appendChild(emptyMsg);
+                        emptyMsg.classList.remove('hidden');
+                    }
+                    return;
+                }
+                if (emptyMsg) emptyMsg.classList.add('hidden');
+                container.innerHTML = library.map(item => `
+                    <div class="library-card dark:bg-gray-800 light:bg-white rounded-xl border dark:border-gray-700 light:border-gray-300 overflow-hidden">
+                        <div class="relative">
+                            ${item.thumbnail ? `<img src="${escapeHtml(item.thumbnail)}" alt="thumbnail" class="w-full h-40 object-cover cursor-pointer" onclick="window.playLibraryVideo('${item.id}')">` : `
+                                <div class="w-full h-40 bg-gray-700 flex items-center justify-center cursor-pointer" onclick="window.playLibraryVideo('${item.id}')">
+                                    <svg class="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                                    </svg>
+                                </div>
+                            `}
+                            <button onclick="window.removeFromLibrary('${item.id}')" class="absolute top-2 right-2 bg-red-600/80 hover:bg-red-700 rounded-full p-1 text-white text-xs">✕</button>
+                        </div>
+                        <div class="p-3">
+                            <p class="text-sm font-medium truncate">${escapeHtml(item.title || 'Sans titre')}</p>
+                            <p class="text-xs text-gray-500 mt-1">${item.quality ? escapeHtml(item.quality) : 'Qualité standard'} • ${new Date(item.savedAt).toLocaleDateString()}</p>
+                            <div class="flex gap-2 mt-2">
+                                <button onclick="window.playLibraryVideo('${item.id}')" class="flex-1 bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs">▶️ Lire</button>
+                                <button onclick="window.showFormatModal('${item.url}')" class="flex-1 bg-green-600 hover:bg-green-700 px-2 py-1 rounded text-xs">📥</button>
+                                <button onclick="window.sendLibraryToDiscord('${item.id}')" class="discord-btn px-2 py-1 rounded text-xs">💬</button>
+                                <button onclick="window.showQRCodeForUrl('${item.url}')" class="bg-indigo-600 hover:bg-indigo-700 px-2 py-1 rounded text-xs">📱 QR</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            window.playLibraryVideo = function(id) {
+                const item = library.find(v => v.id === id);
+                if (!item) return;
+                const modal = document.getElementById('videoModal');
+                const video = document.getElementById('modalVideo');
+                if (!modal || !video) return;
+                modal.classList.remove('hidden');
+                video.src = item.url;
+                video.poster = item.thumbnail || '';
+                video.play().catch(() => {});
+            };
+
+            window.removeFromLibrary = removeFromLibrary;
+            window.showFormatModal = showFormatModal;
+            window.showQRCodeForUrl = showQRCode;
+            
+            window.sendLibraryToDiscord = function(id) {
+                const item = library.find(v => v.id === id);
+                if (!item) return;
+                const title = item.title || 'Vidéo X';
+                const author = item.author ? `@${item.author}` : '';
+                sendToDiscordDirect(item.url, title, author);
+            };
+
+            const clearLibraryBtn = document.getElementById('clearLibraryBtn');
+            if (clearLibraryBtn) {
+                clearLibraryBtn.onclick = () => {
+                    if (confirm('Vider toute la bibliothèque ?')) {
+                        library = [];
+                        localStorage.removeItem('videoLibrary');
+                        renderLibrary();
+                        showToast('Bibliothèque vidée');
+                    }
+                };
+            }
+
+            const closeModalBtn = document.getElementById('closeModal');
+            if (closeModalBtn) {
+                closeModalBtn.onclick = () => {
+                    const modal = document.getElementById('videoModal');
+                    const video = document.getElementById('modalVideo');
+                    if (modal) modal.classList.add('hidden');
+                    if (video) { video.pause(); video.src = ''; }
+                };
+            }
+
+            // ==================== HISTORIQUE ====================
+            function saveHistory(url, title, thumbnail) {
+                const item = { url, title: title.substring(0, 50), thumbnail, date: new Date().toISOString() };
+                history = [item, ...history.filter(h => h.url !== url)].slice(0, 20);
+                localStorage.setItem('videoHistory', JSON.stringify(history));
+                renderHistory();
+            }
+
+            function renderHistory() {
+                const container = document.getElementById('historyList');
+                const emptyMsg = document.getElementById('emptyHistory');
+                if (!container) return;
+                if (history.length === 0) {
+                    container.innerHTML = '';
+                    if (emptyMsg) emptyMsg.classList.remove('hidden');
+                    return;
+                }
+                if (emptyMsg) emptyMsg.classList.add('hidden');
+                container.innerHTML = history.map(item => `
+                    <div class="flex items-center gap-3 p-3 dark:bg-gray-800 light:bg-white rounded-xl border dark:border-gray-700 light:border-gray-300 hover:bg-blue-600/10 transition cursor-pointer" onclick="document.getElementById('tweetUrl').value='${escapeHtml(item.url)}'; switchTab('download');">
+                        ${item.thumbnail ? `<img src="${escapeHtml(item.thumbnail)}" class="w-12 h-12 rounded object-cover">` : '<div class="w-12 h-12 bg-gray-700 rounded flex items-center justify-center">🎬</div>'}
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm truncate">${escapeHtml(item.title)}</p>
+                            <p class="text-xs text-gray-500">${new Date(item.date).toLocaleString()}</p>
+                        </div>
+                        <span class="text-blue-400 text-sm">→</span>
+                    </div>
+                `).join('');
+            }
+
+            const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+            if (clearHistoryBtn) {
+                clearHistoryBtn.onclick = () => {
+                    history = [];
+                    localStorage.removeItem('videoHistory');
+                    renderHistory();
+                    showToast('Historique effacé');
+                };
+            }
+
+            // ==================== TECH LOGS ====================
+            function addTechLog(apiName, url, status, data, error = null, duration = 0) {
+                const log = {
+                    id: Date.now().toString(),
+                    apiName, url, status,
+                    data: data,
+                    error: error ? error.message || String(error) : null,
+                    duration,
+                    timestamp: new Date().toISOString()
+                };
+                techLogs.unshift(log);
+                if (techLogs.length > 50) techLogs = techLogs.slice(0, 50);
+                sessionStorage.setItem('techLogs', JSON.stringify(techLogs));
+                renderTechLogs();
+            }
+
+            function clearTechLogs() {
+                techLogs = [];
+                sessionStorage.removeItem('techLogs');
+                selectedTechLogId = null;
+                renderTechLogs();
+                const panel = document.getElementById('techDetailPanel');
+                if (panel) panel.classList.add('hidden');
+                showToast('Logs techniques effacés');
+            }
+
+            function renderTechLogs() {
+                const container = document.getElementById('techLogsList');
+                const emptyMsg = document.getElementById('emptyTechLogs');
+                if (!container) return;
+                if (techLogs.length === 0) {
+                    container.innerHTML = '';
+                    if (emptyMsg) {
+                        container.appendChild(emptyMsg);
+                        emptyMsg.classList.remove('hidden');
+                    }
+                    return;
+                }
+                if (emptyMsg) emptyMsg.classList.add('hidden');
+                container.innerHTML = techLogs.map(log => {
+                    const statusClass = log.status === 'success' ? 'success' : log.status === 'error' ? 'error' : 'info';
+                    const statusIcon = log.status === 'success' ? '✅' : log.status === 'error' ? '❌' : '⏳';
+                    const variantCount = log.data?.variants?.length || 0;
+                    return `
+                        <div class="tech-entry p-3 dark:bg-gray-800/50 light:bg-gray-100 rounded-lg border dark:border-gray-700 light:border-gray-300 cursor-pointer ${selectedTechLogId === log.id ? 'ring-2 ring-blue-500' : ''}" onclick="window.selectTechLog('${log.id}')">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <span>${statusIcon}</span>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-semibold text-sm">${escapeHtml(log.apiName)}</span>
+                                            <span class="api-badge ${statusClass}">${log.status.toUpperCase()}</span>
+                                            ${variantCount > 0 ? `<span class="text-xs text-gray-500">${variantCount} variante(s)</span>` : ''}
+                                        </div>
+                                        <p class="text-xs text-gray-500 mt-0.5">${new Date(log.timestamp).toLocaleString()} • ${log.duration}ms</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="event.stopPropagation(); window.copyTechLogData('${log.id}')" class="copy-btn text-xs bg-gray-600 hover:bg-gray-500 px-2 py-1 rounded">📋</button>
+                                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                if (selectedTechLogId) {
+                    const log = techLogs.find(l => l.id === selectedTechLogId);
+                    if (log) showTechDetail(log);
+                }
+            }
+
+            function selectTechLog(id) {
+                selectedTechLogId = id;
+                const log = techLogs.find(l => l.id === id);
+                if (log) showTechDetail(log);
+                renderTechLogs();
+            }
+
+            function showTechDetail(log) {
+                const panel = document.getElementById('techDetailPanel');
+                if (!panel) return;
+                panel.classList.remove('hidden');
+                const titleEl = document.getElementById('techDetailTitle');
+                if (titleEl) titleEl.textContent = `${log.apiName} - Réponse API`;
+                const contentEl = document.getElementById('techDetailContent');
+                if (contentEl) contentEl.textContent = JSON.stringify(log.data || log.error || {}, null, 2);
+                panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            function copyTechLogData(id) {
+                const log = techLogs.find(l => l.id === id);
+                if (log && log.data) {
+                    copyToClipboard(JSON.stringify(log.data, null, 2));
+                    showToast('✅ Données API copiées');
+                }
+            }
+
+            window.selectTechLog = selectTechLog;
+            window.copyTechLogData = copyTechLogData;
+
+            const refreshTech = document.getElementById('refreshTechBtn');
+            if (refreshTech) {
+                refreshTech.onclick = () => {
+                    techLogs = JSON.parse(sessionStorage.getItem('techLogs') || '[]');
+                    selectedTechLogId = null;
+                    const panel = document.getElementById('techDetailPanel');
+                    if (panel) panel.classList.add('hidden');
+                    renderTechLogs();
+                    showToast('Logs actualisés');
+                };
+            }
+
+            const clearTech = document.getElementById('clearTechBtn');
+            if (clearTech) clearTech.onclick = () => clearTechLogs();
+
+            const closeTechDetail = document.getElementById('closeTechDetail');
+            if (closeTechDetail) {
+                closeTechDetail.onclick = () => {
+                    const panel = document.getElementById('techDetailPanel');
+                    if (panel) panel.classList.add('hidden');
+                    selectedTechLogId = null;
+                    renderTechLogs();
+                };
+            }
+
+            const copyTechDetail = document.getElementById('copyTechDetail');
+            if (copyTechDetail) {
+                copyTechDetail.onclick = () => {
+                    const content = document.getElementById('techDetailContent');
+                    if (content) copyToClipboard(content.textContent);
+                    showToast('✅ Détail API copié');
+                };
+            }
+
+            // ==================== APIs ====================
             async function fetchWithTimeout(url, opts = {}, timeout = 10000) {
                 const ctrl = new AbortController();
                 const id = setTimeout(() => ctrl.abort(), timeout);
-                try { const res = await fetch(url, { ...opts, signal: ctrl.signal }); clearTimeout(id); return res; }
-                catch(e) { clearTimeout(id); throw e; }
+                try {
+                    const res = await fetch(url, { ...opts, signal: ctrl.signal });
+                    clearTimeout(id);
+                    return res;
+                } catch(e) {
+                    clearTimeout(id);
+                    throw e;
+                }
             }
-            function extractVariantsFromData(data, source) {
-                let variants = [], thumbnail = null, author = null, text = null;
-                if (source === 'vx' || data.media_extended || data.mediaURLs) {
-                    if (data.media_extended?.length) {
+
+            async function fetchVxTwitter(tweetUrl) {
+                const startTime = Date.now();
+                const cleanUrl = tweetUrl.split('?')[0];
+                const path = new URL(cleanUrl).pathname;
+                const apiUrl = `https://api.vxtwitter.com${path}`;
+                try {
+                    const resp = await fetchWithTimeout(apiUrl);
+                    if (!resp.ok) throw new Error(`vxTwitter ${resp.status}`);
+                    const data = await resp.json();
+                    let variants = [], thumbnail = null, author = null, authorName = null, text = null, likes = null, retweets = null;
+                    if (data.media_extended) {
                         for (let media of data.media_extended) {
                             if (media.type === 'video') {
                                 if (media.url) variants.push({ bitrate: media.bitrate || 0, url: media.url });
+                                if (media.videoVariants) {
+                                    for (let v of media.videoVariants) {
+                                        if (v.content_type === 'video/mp4') variants.push({ bitrate: v.bitrate || 0, url: v.url });
+                                    }
+                                }
                                 if (media.thumbnail_url) thumbnail = media.thumbnail_url;
-                                if (media.videoVariants) {
-                                    for (let v of media.videoVariants) if (v.content_type === 'video/mp4' && v.url) variants.push({ bitrate: v.bitrate || 0, url: v.url });
-                                }
                             }
                         }
                     }
-                    if (!variants.length && data.mediaURLs?.length) variants = data.mediaURLs.map(url => ({ bitrate: 0, url }));
-                    author = data.user_screen_name || data.user?.screen_name;
+                    if (!variants.length && data.mediaURLs) variants = data.mediaURLs.map(url => ({ bitrate: 0, url }));
+                    author = data.user_screen_name;
+                    authorName = data.user_name;
                     text = data.text;
+                    likes = data.likes;
+                    retweets = data.retweets;
+                    variants.sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
+                    const result = { variants, thumbnail, author, authorName, text, likes, retweets };
+                    addTechLog('vxTwitter', apiUrl, 'success', result, null, Date.now() - startTime);
+                    return result;
+                } catch(e) {
+                    addTechLog('vxTwitter', apiUrl, 'error', null, e, Date.now() - startTime);
+                    throw e;
                 }
-                else if (source === 'fx' || (data.tweet && data.tweet.media)) {
+            }
+
+            async function fetchFxTwitter(tweetUrl) {
+                const startTime = Date.now();
+                const cleanUrl = tweetUrl.split('?')[0];
+                const path = new URL(cleanUrl).pathname;
+                const apiUrl = `https://api.fxtwitter.com${path}`;
+                try {
+                    const resp = await fetchWithTimeout(apiUrl);
+                    if (!resp.ok) throw new Error(`fxTwitter ${resp.status}`);
+                    const data = await resp.json();
+                    let variants = [], thumbnail = null, author = null, authorName = null, text = null, likes = null, retweets = null;
                     const tweet = data.tweet;
-                    for (let media of tweet.media?.all || []) {
-                        if (media.type === 'video' && media.variants) {
-                            for (let v of media.variants) if (v.content_type === 'video/mp4' && v.url) variants.push({ bitrate: v.bitrate || 0, url: v.url });
-                            thumbnail = media.thumbnail_url || thumbnail;
+                    if (tweet?.media?.all) {
+                        for (let media of tweet.media.all) {
+                            if (media.type === 'video' && media.variants) {
+                                for (let v of media.variants) {
+                                    if (v.content_type === 'video/mp4') variants.push({ bitrate: v.bitrate || 0, url: v.url });
+                                }
+                                thumbnail = media.thumbnail_url || thumbnail;
+                            }
                         }
                     }
-                    author = tweet.author?.screen_name;
-                    text = tweet.text;
+                    author = tweet?.author?.screen_name;
+                    authorName = tweet?.author?.name;
+                    text = tweet?.text;
+                    likes = tweet?.likes;
+                    retweets = tweet?.retweets;
+                    variants.sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
+                    const result = { variants, thumbnail, author, authorName, text, likes, retweets };
+                    addTechLog('fxTwitter', apiUrl, 'success', result, null, Date.now() - startTime);
+                    return result;
+                } catch(e) {
+                    addTechLog('fxTwitter', apiUrl, 'error', null, e, Date.now() - startTime);
+                    throw e;
                 }
-                const unique = new Map();
-                for (let v of variants) if (!unique.has(v.url)) unique.set(v.url, v);
-                return { variants: Array.from(unique.values()), thumbnail, author, text };
             }
-            async function fetchVxTwitter(tweetUrl) {
-                const path = new URL(tweetUrl).pathname;
-                const resp = await fetchWithTimeout(`https://api.vxtwitter.com${path}`);
-                if (!resp.ok) throw new Error(`vxTwitter ${resp.status}`);
-                const data = await resp.json();
-                return { ...extractVariantsFromData(data, 'vx'), raw: data };
-            }
-            async function fetchFxTwitter(tweetUrl) {
-                const path = new URL(tweetUrl).pathname;
-                const resp = await fetchWithTimeout(`https://api.fxtwitter.com${path}`);
-                if (!resp.ok) throw new Error(`fxTwitter ${resp.status}`);
-                const data = await resp.json();
-                return { ...extractVariantsFromData(data, 'fx'), raw: data };
-            }
+
             async function fetchTwitsave(tweetUrl) {
-                const resp = await fetchWithTimeout(`https://twitsave.app/api/get?url=${encodeURIComponent(tweetUrl)}`);
-                if (!resp.ok) throw new Error(`twitsave ${resp.status}`);
-                const json = await resp.json();
-                if (!json.success || !json.data?.video) throw new Error("No video");
-                const variants = json.data.video.map(v => ({ bitrate: v.quality === 'HD' ? 2000000 : 800000, url: v.url }));
-                return { variants, thumbnail: json.data.thumbnail || null, author: "twitsave", text: null, raw: json };
+                const startTime = Date.now();
+                const apiUrl = `https://twitsave.app/api/get?url=${encodeURIComponent(tweetUrl)}`;
+                try {
+                    const resp = await fetchWithTimeout(apiUrl);
+                    if (!resp.ok) throw new Error(`twitsave ${resp.status}`);
+                    const json = await resp.json();
+                    if (!json.success || !json.data?.video) throw new Error("No video");
+                    const variants = json.data.video.map(v => ({ bitrate: v.quality === 'HD' ? 2000000 : 800000, url: v.url }));
+                    const result = { variants, thumbnail: json.data.thumbnail, author: null, authorName: null, text: null, likes: null, retweets: null };
+                    addTechLog('twitsave', apiUrl, 'success', result, null, Date.now() - startTime);
+                    return result;
+                } catch(e) {
+                    addTechLog('twitsave', apiUrl, 'error', null, e, Date.now() - startTime);
+                    throw e;
+                }
             }
 
-            // Affichage des résultats : liens directs avec message d'appui long
-            function showResults(thumbnailUrl, variants, author, text, tweetUrlRaw) {
+            // ==================== AFFICHAGE RÉSULTATS ====================
+            function hideAll() {
+                safeClassList('initialMessage', 'add', 'hidden');
+                safeClassList('loadingState', 'add', 'hidden');
+                safeClassList('resultContainer', 'add', 'hidden');
+                safeClassList('errorContainer', 'add', 'hidden');
+            }
+
+            function showLoading() {
                 hideAll();
-                resultDiv.classList.remove('hidden');
-                const sorted = [...variants].sort((a,b) => (b.bitrate||0) - (a.bitrate||0));
+                safeClassList('loadingState', 'remove', 'hidden');
+            }
 
-                const getLabelWithSize = (bitrate) => {
-                    if (!bitrate) return "Standard";
-                    if (bitrate >= 1500000) return `1080p+ (${(bitrate/1000).toFixed(0)} kbps)`;
-                    if (bitrate >= 800000) return `720p (${(bitrate/1000).toFixed(0)} kbps)`;
-                    if (bitrate >= 400000) return `480p (${(bitrate/1000).toFixed(0)} kbps)`;
-                    return `Basse qualité (${(bitrate/1000).toFixed(0)} kbps)`;
-                };
-
-                let qualitiesHtml = '';
-                for (let v of sorted) {
-                    if (!v.url) continue;
-                    qualitiesHtml += `
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-gray-100 dark:bg-gray-800/60 rounded-xl p-3">
-                            <span class="font-medium text-sm">${getLabelWithSize(v.bitrate)}</span>
-                            <div class="flex flex-wrap gap-2">
-                                <!-- Lien direct avec explication pour appui long -->
-                                <a href="${escapeHtml(v.url)}" target="_blank" class="bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg text-sm font-medium inline-block">🎬 Lien vidéo</a>
-                                <button data-url="${escapeHtml(v.url)}" class="copyLinkBtn bg-gray-500/20 hover:bg-gray-600 p-1.5 rounded-lg text-xs">📋 Copier</button>
-                                <button data-url="${escapeHtml(v.url)}" class="qrBtn bg-gray-500/20 hover:bg-purple-600 p-1.5 rounded-lg text-xs">📱 QR</button>
-                                <button data-url="${escapeHtml(v.url)}" class="shareBtn bg-green-600/40 hover:bg-green-700 p-1.5 rounded-lg text-xs">📤 Partager</button>
+            function showError(message, details = null) {
+                hideAll();
+                const errorDiv = document.getElementById('errorContainer');
+                if (errorDiv) {
+                    errorDiv.classList.remove('hidden');
+                    errorDiv.innerHTML = `
+                        <div class="flex items-start gap-2">
+                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                            <div>
+                                <p class="font-semibold">${escapeHtml(message)}</p>
+                                ${details ? `<p class="text-sm mt-1">${escapeHtml(details)}</p>` : ''}
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                 }
+            }
 
-                const videoPreview = sorted[0]?.url ? `
-                    <div class="mb-4 rounded-xl overflow-hidden bg-black/30">
-                        <video controls class="w-full max-h-80" poster="${thumbnailUrl || ''}">
-                            <source src="${escapeHtml(sorted[0].url)}" type="video/mp4">
-                        </video>
-                        <p class="text-xs text-center text-gray-400 p-1">Aperçu (sans téléchargement automatique)</p>
-                    </div>
-                ` : '';
+            function resetAnalysis() {
+                currentVariants = [];
+                currentVideoData = null;
+                pendingDownloadUrl = null;
+                const resultContainer = document.getElementById('resultContainer');
+                if (resultContainer) {
+                    resultContainer.innerHTML = '';
+                    resultContainer.classList.add('hidden');
+                }
+                const errorContainer = document.getElementById('errorContainer');
+                if (errorContainer) {
+                    errorContainer.innerHTML = '';
+                    errorContainer.classList.add('hidden');
+                }
+            }
 
-                const tweetTextHtml = text ? `<p class="text-gray-600 dark:text-gray-300 text-sm italic line-clamp-2">${escapeHtml(text.substring(0, 180))}</p>` : '';
-
-                resultDiv.innerHTML = `
-                    <div class="space-y-5">
-                        <div class="flex flex-col md:flex-row gap-4 bg-gray-100/50 dark:bg-gray-800/30 p-4 rounded-xl">
-                            ${thumbnailUrl ? `<img src="${escapeHtml(thumbnailUrl)}" class="w-32 h-32 object-cover rounded-lg" onerror="this.style.display='none'" alt="miniature">` : '<div class="w-32 h-32 bg-gray-700 rounded-lg"></div>'}
-                            <div class="flex-1">
-                                <div class="flex flex-wrap gap-2 items-center">
-                                    <span class="bg-green-600/30 text-green-700 dark:text-green-300 text-xs px-2 py-0.5 rounded-full">✅ Vidéo trouvée</span>
-                                    ${author ? `<span class="text-gray-500 dark:text-gray-400 text-sm">@${escapeHtml(author)}</span>` : ''}
-                                </div>
-                                ${tweetTextHtml}
-                                <button id="copyTweetUrlBtn" class="mt-2 text-xs text-blue-500 hover:underline">🔗 Copier l'URL du tweet</button>
-                            </div>
-                        </div>
-                        ${videoPreview}
-                        <div class="bg-gray-100 dark:bg-gray-900/70 rounded-xl p-4">
-                            <h3 class="font-semibold mb-3 flex items-center gap-2">📲 Qualités disponibles</h3>
-                            <div class="grid gap-2">${qualitiesHtml}</div>
-                            <div class="mt-4 p-3 rounded-lg mobile-instruction text-sm">
-                                📱 <strong>Comment télécharger sur mobile (iPhone / Android) :</strong><br>
-                                1️⃣ Appuyez <strong>longuement</strong> sur le bouton <span class="font-mono bg-gray-200 dark:bg-gray-700 px-1 rounded">🎬 Lien vidéo</span><br>
-                                2️⃣ Dans le menu qui apparaît, choisissez <strong>« Enregistrer la vidéo »</strong> (ou « Télécharger le fichier »).<br>
-                                💡 Si vous ne voyez pas cette option, utilisez « Copier le lien » puis collez-le dans votre navigateur et répétez l'appui long.
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                // Événements auxiliaires
-                document.querySelectorAll('.copyLinkBtn').forEach(btn => {
-                    btn.addEventListener('click', async () => { await navigator.clipboard.writeText(btn.dataset.url); showToast('Lien vidéo copié !'); });
-                });
-                document.querySelectorAll('.qrBtn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        let popup = document.getElementById('dynamicQrPopup');
-                        if(popup) popup.remove();
-                        popup = document.createElement('div');
-                        popup.id = 'dynamicQrPopup';
-                        popup.className = 'qr-popup p-3 shadow-2xl rounded-xl bg-white dark:bg-gray-800';
-                        popup.innerHTML = `<div class="text-sm font-medium mb-2">📱 Scannez</div><div id="qrCodeContainer"></div><button class="text-xs mt-2 text-blue-500">Fermer</button>`;
-                        document.body.appendChild(popup);
-                        new QRCode(popup.querySelector('#qrCodeContainer'), { text: btn.dataset.url, width: 120, height: 120 });
-                        popup.querySelector('button').onclick = () => popup.remove();
-                    });
-                });
-                document.querySelectorAll('.shareBtn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        if (navigator.share) {
-                            navigator.share({ title: "X Video", url: btn.dataset.url }).catch(() => {});
+            async function analyzeTweet() {
+                resetAnalysis();
+                const urlInput = document.getElementById('tweetUrl');
+                if (!urlInput) return;
+                const rawUrl = urlInput.value.trim();
+                if (!rawUrl) { showError("Veuillez entrer une URL."); return; }
+                if (!rawUrl.includes('/status/')) { showError("URL invalide - doit contenir /status/"); return; }
+                showLoading();
+                await new Promise(r => setTimeout(r, 200));
+                let lastError = null;
+                for (const svc of [
+                    { name: 'vxTwitter', fn: fetchVxTwitter },
+                    { name: 'fxTwitter', fn: fetchFxTwitter },
+                    { name: 'twitsave', fn: fetchTwitsave }
+                ]) {
+                    try {
+                        const result = await svc.fn(rawUrl);
+                        if (result.variants && result.variants.length > 0) {
+                            displayResult({ ...result, rawUrl });
+                            return;
                         } else {
-                            showToast("Partage non supporté, utilisez Copier.");
+                            lastError = `Aucune variante vidéo trouvée via ${svc.name}`;
                         }
-                    });
-                });
-                document.getElementById('copyTweetUrlBtn')?.addEventListener('click', async () => { await navigator.clipboard.writeText(tweetUrlRaw); showToast('URL tweet copiée'); });
-
-                // Sauvegarde historique
-                saveHistory(tweetUrlRaw, sorted[0]?.url, author, thumbnailUrl, getLabelWithSize(sorted[0]?.bitrate || 0));
-            }
-
-            async function analyzeTweet() {
-                const rawUrl = urlInput.value.trim();
-                if (!rawUrl) { showError("Veuillez entrer une URL.", null); return; }
-                if (!rawUrl.includes('/status/')) { showError("URL invalide - doit contenir /status/", null); return; }
-                showLoading();
-
-                const services = [
-                    { name: 'vxTwitter', fn: fetchVxTwitter },
-                    { name: 'fxTwitter', fn: fetchFxTwitter },
-                    { name: 'twitsave', fn: fetchTwitsave }
-                ];
-                for (const svc of services) {
-                    try {
-                        const result = await svc.fn(rawUrl);
-                        if (result.variants && result.variants.length > 0) {
-                            showResults(result.thumbnail, result.variants, result.author, result.text, rawUrl);
-                            return;
-                        }
-                    } catch (err) { console.warn(`${svc.name} failed:`, err); }
-                }
-                showError("Aucune vidéo trouvée après 3 services.", "Le tweet ne contient pas de vidéo publique ou API momentanément indisponible.");
-            }
-
-            analyzeBtn.onclick = analyzeTweet;
-            urlInput.onkeypress = e => { if(e.key === 'Enter') analyzeTweet(); };
-            renderHistory();
-            hideAll();
-            initialDiv.classList.remove('hidden');
-        })();
-    </script>
-</body>
-</html>
-                                if (media.videoVariants) {
-                                    for (let v of media.videoVariants) if (v.content_type === 'video/mp4' && v.url) variants.push({ bitrate: v.bitrate || 0, url: v.url });
-                                }
-                            }
-                        }
+                    } catch(e) {
+                        console.warn(svc.name, e);
+                        lastError = e.message;
                     }
-                    if (!variants.length && data.mediaURLs?.length) variants = data.mediaURLs.map(url => ({ bitrate: 0, url }));
-                    author = data.user_screen_name || data.user?.screen_name;
-                    text = data.text;
                 }
-                else if (source === 'fx' || (data.tweet && data.tweet.media)) {
-                    const tweet = data.tweet;
-                    for (let media of tweet.media?.all || []) {
-                        if (media.type === 'video' && media.variants) {
-                            for (let v of media.variants) if (v.content_type === 'video/mp4' && v.url) variants.push({ bitrate: v.bitrate || 0, url: v.url });
-                            thumbnail = media.thumbnail_url || thumbnail;
-                        }
-                    }
-                    author = tweet.author?.screen_name;
-                    text = tweet.text;
-                }
-                const unique = new Map();
-                for (let v of variants) if (!unique.has(v.url)) unique.set(v.url, v);
-                return { variants: Array.from(unique.values()), thumbnail, author, text };
-            }
-            async function fetchVxTwitter(tweetUrl) {
-                const path = new URL(tweetUrl).pathname;
-                const resp = await fetchWithTimeout(`https://api.vxtwitter.com${path}`);
-                if (!resp.ok) throw new Error(`vxTwitter ${resp.status}`);
-                const data = await resp.json();
-                return { ...extractVariantsFromData(data, 'vx'), raw: data };
-            }
-            async function fetchFxTwitter(tweetUrl) {
-                const path = new URL(tweetUrl).pathname;
-                const resp = await fetchWithTimeout(`https://api.fxtwitter.com${path}`);
-                if (!resp.ok) throw new Error(`fxTwitter ${resp.status}`);
-                const data = await resp.json();
-                return { ...extractVariantsFromData(data, 'fx'), raw: data };
-            }
-            async function fetchTwitsave(tweetUrl) {
-                const resp = await fetchWithTimeout(`https://twitsave.app/api/get?url=${encodeURIComponent(tweetUrl)}`);
-                if (!resp.ok) throw new Error(`twitsave ${resp.status}`);
-                const json = await resp.json();
-                if (!json.success || !json.data?.video) throw new Error("No video");
-                const variants = json.data.video.map(v => ({ bitrate: v.quality === 'HD' ? 2000000 : 800000, url: v.url }));
-                return { variants, thumbnail: json.data.thumbnail || null, author: "twitsave", text: null, raw: json };
+                showError("Aucune vidéo trouvée", lastError || "Essayez un autre tweet public avec vidéo.");
             }
 
-            // Affichage des résultats avec bouton de téléchargement direct
-            function showResults(thumbnailUrl, variants, author, text, tweetUrlRaw) {
+            function displayResult({ variants, thumbnail, author, authorName, text, likes, retweets, rawUrl }) {
                 hideAll();
-                resultDiv.classList.remove('hidden');
-                const sorted = [...variants].sort((a,b) => (b.bitrate||0) - (a.bitrate||0));
-                const bestVideo = sorted[0]?.url || '';
-
-                const getLabelWithSize = (bitrate) => {
-                    if (!bitrate) return "Standard";
-                    if (bitrate >= 1500000) return `1080p+ (${(bitrate/1000).toFixed(0)} kbps)`;
-                    if (bitrate >= 800000) return `720p (${(bitrate/1000).toFixed(0)} kbps)`;
-                    if (bitrate >= 400000) return `480p (${(bitrate/1000).toFixed(0)} kbps)`;
-                    return `Basse qualité (${(bitrate/1000).toFixed(0)} kbps)`;
+                const container = document.getElementById('resultContainer');
+                if (!container) return;
+                container.classList.remove('hidden');
+                currentVariants = variants;
+                const best = variants[0];
+                const title = text ? (text.substring(0, 80) + (text.length > 80 ? '...' : '')) : 'Vidéo X';
+                saveHistory(rawUrl, title, thumbnail);
+                currentVideoData = {
+                    url: best.url,
+                    thumbnail: thumbnail,
+                    title: title,
+                    quality: best.bitrate >= 1000000 ? 'HD' : 'Standard',
+                    author: author,
+                    authorName: authorName
                 };
-
-                let qualitiesHtml = '';
-                for (let v of sorted) {
-                    if (!v.url) continue;
-                    qualitiesHtml += `
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-gray-100 dark:bg-gray-800/60 rounded-xl p-3">
-                            <span class="font-medium text-sm">${getLabelWithSize(v.bitrate)}</span>
-                            <div class="flex flex-wrap gap-2">
-                                <button data-url="${escapeHtml(v.url)}" class="downloadBtn bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg text-sm font-medium">💾 Télécharger</button>
-                                <button data-url="${escapeHtml(v.url)}" class="copyLinkBtn bg-gray-500/20 hover:bg-gray-600 p-1.5 rounded-lg text-xs">📋 Copier lien</button>
-                                <button data-url="${escapeHtml(v.url)}" class="qrBtn bg-gray-500/20 hover:bg-purple-600 p-1.5 rounded-lg text-xs">📱 QR</button>
-                                <button data-url="${escapeHtml(v.url)}" class="shareBtn bg-green-600/40 hover:bg-green-700 p-1.5 rounded-lg text-xs">📤 Partager</button>
+                let qualitiesHtml = variants.map((v, i) => {
+                    const isBest = i === 0;
+                    const label = v.bitrate ? (v.bitrate >= 1000000 ? `HD ${(v.bitrate/1000000).toFixed(1)} Mbps` : `${(v.bitrate/1000).toFixed(0)} kbps`) : 'Qualité';
+                    return `
+                        <div class="quality-card dark:bg-gray-800/60 light:bg-gray-100 rounded-xl p-3 border ${isBest ? 'border-blue-500/50' : 'dark:border-gray-700 light:border-gray-300'}">
+                            <div class="flex items-center justify-between flex-wrap gap-2">
+                                <div class="flex items-center gap-2">
+                                    <span>${isBest ? '⭐' : '🎬'}</span>
+                                    <span class="font-semibold">${label}</span>
+                                    ${isBest ? '<span class="text-xs bg-blue-600/50 px-2 py-0.5 rounded-full">Meilleure</span>' : ''}
+                                </div>
+                                <div class="flex gap-2">
+                                    <button data-url="${escapeHtml(v.url)}" class="download-btn bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-3 py-1.5 rounded-lg text-sm font-semibold transition">📥</button>
+                                    <button data-url="${escapeHtml(v.url)}" data-title="${escapeHtml(title)}" class="share-btn bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded-lg text-sm transition">🔗</button>
+                                    <button data-url="${escapeHtml(v.url)}" data-quality="${label}" class="save-library bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-lg text-sm transition">📚</button>
+                                    <button data-url="${escapeHtml(v.url)}" class="discord-send-btn discord-btn px-3 py-1.5 rounded-lg text-sm transition font-semibold">💬</button>
+                                    <button data-url="${escapeHtml(v.url)}" class="qr-btn bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-lg text-sm transition">📱 QR</button>
+                                </div>
                             </div>
                         </div>
                     `;
-                }
-
-                const videoPreview = bestVideo ? `
-                    <div class="mb-4 rounded-xl overflow-hidden bg-black/30">
-                        <video controls class="w-full max-h-80" poster="${thumbnailUrl || ''}">
-                            <source src="${escapeHtml(bestVideo)}" type="video/mp4">
-                        </video>
-                        <p class="text-xs text-center text-gray-400 p-1">Aperçu (ne bloque pas le téléchargement)</p>
-                    </div>
-                ` : '';
-
-                const tweetTextHtml = text ? `<p class="text-gray-600 dark:text-gray-300 text-sm italic line-clamp-2">${escapeHtml(text.substring(0, 180))}</p>` : '';
-
-                resultDiv.innerHTML = `
-                    <div class="space-y-5">
-                        <div class="flex flex-col md:flex-row gap-4 bg-gray-100/50 dark:bg-gray-800/30 p-4 rounded-xl">
-                            ${thumbnailUrl ? `<img src="${escapeHtml(thumbnailUrl)}" class="w-32 h-32 object-cover rounded-lg" onerror="this.style.display='none'" alt="miniature">` : '<div class="w-32 h-32 bg-gray-700 rounded-lg"></div>'}
-                            <div class="flex-1">
-                                <div class="flex flex-wrap gap-2 items-center">
-                                    <span class="bg-green-600/30 text-green-700 dark:text-green-300 text-xs px-2 py-0.5 rounded-full">✅ Vidéo trouvée</span>
-                                    ${author ? `<span class="text-gray-500 dark:text-gray-400 text-sm">@${escapeHtml(author)}</span>` : ''}
+                }).join('');
+                container.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="dark:bg-gradient-to-r from-blue-950/40 to-purple-950/40 light:bg-gradient-to-r light:from-blue-100 light:to-purple-100 rounded-xl p-4">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h2 class="text-xl font-bold">${escapeHtml(title)}</h2>
+                                    ${author ? `<p class="text-sm text-gray-400">@${escapeHtml(author)}${authorName ? ` (${escapeHtml(authorName)})` : ''}</p>` : ''}
+                                    ${likes ? `<p class="text-xs">❤️ ${likes.toLocaleString()} likes 🔁 ${retweets?.toLocaleString() || 0} retweets</p>` : ''}
                                 </div>
-                                ${tweetTextHtml}
-                                <button id="copyTweetUrlBtn" class="mt-2 text-xs text-blue-500 hover:underline">🔗 Copier l'URL du tweet</button>
+                                <div class="flex gap-2">
+                                    <button id="saveToLibraryBtn" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm font-semibold transition">📚</button>
+                                    <button id="discordMainBtn" class="discord-btn px-4 py-2 rounded-lg text-sm font-semibold transition">💬 Discord</button>
+                                    <button id="miniPlayerBtn" class="bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded-lg text-sm font-semibold transition">📺 Mini</button>
+                                    <button id="qrMainBtn" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg text-sm font-semibold transition">📱 QR</button>
+                                </div>
                             </div>
                         </div>
-                        ${videoPreview}
-                        <div class="bg-gray-100 dark:bg-gray-900/70 rounded-xl p-4">
-                            <h3 class="font-semibold mb-3 flex items-center gap-2">📲 Qualités disponibles</h3>
-                            <div class="grid gap-2">${qualitiesHtml}</div>
-                            <div class="mt-4 text-xs bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded-lg">
-                                📱 <strong>Sur mobile :</strong> le bouton "Télécharger" lance l'enregistrement direct. Si rien ne se passe, <strong>appuyez longuement</strong> sur le bouton → « Enregistrer le lien » ou « Télécharger le fichier ».
+                        <div class="dark:bg-gray-800/40 light:bg-gray-200/40 rounded-xl p-4">
+                            <h3 class="font-semibold mb-2">🎬 Aperçu vidéo</h3>
+                            <video id="previewVideo" controls class="w-full max-h-96 rounded-lg shadow-lg" poster="${thumbnail ? escapeHtml(thumbnail) : ''}">
+                                <source src="${escapeHtml(best.url)}" type="video/mp4">
+                                Votre navigateur ne supporte pas la vidéo.
+                            </video>
+                            <div class="flex gap-2 mt-3">
+                                <button id="fullscreenBtn" class="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded-lg text-sm">⛶ Plein écran</button>
+                                <button id="downloadCurrentBtn" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-3 py-1.5 rounded-lg text-sm">📥 Télécharger</button>
+                                <button id="shareCurrentBtn" class="bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded-lg text-sm">🔗 Partager</button>
+                                <button id="discordCurrentBtn" class="discord-btn px-3 py-1.5 rounded-lg text-sm font-semibold">💬 Discord</button>
+                                <button id="qrCurrentBtn" class="bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-lg text-sm">📱 QR</button>
                             </div>
+                        </div>
+                        <div class="dark:bg-gray-900/60 light:bg-gray-200/60 rounded-xl p-4">
+                            <h3 class="font-semibold mb-3">📥 Qualités disponibles</h3>
+                            <div class="space-y-2">${qualitiesHtml}</div>
+                        </div>
+                        ${text ? `<div class="dark:bg-gray-800/30 light:bg-gray-200/30 rounded-xl p-4"><p class="text-sm italic">"${escapeHtml(text)}"</p></div>` : ''}
+                        <div class="text-center mt-4">
+                            <button onclick="switchTab('tech')" class="text-blue-400 hover:text-blue-300 text-sm underline">🔧 Voir les réponses techniques</button>
                         </div>
                     </div>
                 `;
-
-                // Attacher les événements
-                document.querySelectorAll('.downloadBtn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        downloadVideo(btn.dataset.url, `x_video_${Date.now()}.mp4`);
-                    });
-                });
-                document.querySelectorAll('.copyLinkBtn').forEach(btn => {
-                    btn.addEventListener('click', async () => { await navigator.clipboard.writeText(btn.dataset.url); showToast('Lien vidéo copié !'); });
-                });
-                document.querySelectorAll('.qrBtn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        let popup = document.getElementById('dynamicQrPopup');
-                        if(popup) popup.remove();
-                        popup = document.createElement('div');
-                        popup.id = 'dynamicQrPopup';
-                        popup.className = 'qr-popup p-3 shadow-2xl rounded-xl bg-white dark:bg-gray-800';
-                        popup.innerHTML = `<div class="text-sm font-medium mb-2">📱 Scannez</div><div id="qrCodeContainer"></div><button class="text-xs mt-2 text-blue-500">Fermer</button>`;
-                        document.body.appendChild(popup);
-                        new QRCode(popup.querySelector('#qrCodeContainer'), { text: btn.dataset.url, width: 120, height: 120 });
-                        popup.querySelector('button').onclick = () => popup.remove();
-                    });
-                });
-                document.querySelectorAll('.shareBtn').forEach(btn => {
-                    btn.addEventListener('click', () => shareVideo(btn.dataset.url, "Vidéo X"));
-                });
-                document.getElementById('copyTweetUrlBtn')?.addEventListener('click', async () => { await navigator.clipboard.writeText(tweetUrlRaw); showToast('URL tweet copiée'); });
-
-                // Sauvegarde historique
-                saveHistory(tweetUrlRaw, bestVideo, author, thumbnailUrl, getLabelWithSize(sorted[0]?.bitrate || 0));
-            }
-
-            // Analyse principale
-            async function analyzeTweet() {
-                const rawUrl = urlInput.value.trim();
-                if (!rawUrl) { showError("Veuillez entrer une URL.", null); return; }
-                if (!rawUrl.includes('/status/')) { showError("URL invalide - doit contenir /status/", null); return; }
-                showLoading();
-
-                const services = [
-                    { name: 'vxTwitter', fn: fetchVxTwitter },
-                    { name: 'fxTwitter', fn: fetchFxTwitter },
-                    { name: 'twitsave', fn: fetchTwitsave }
-                ];
-                for (const svc of services) {
-                    try {
-                        const result = await svc.fn(rawUrl);
-                        if (result.variants && result.variants.length > 0) {
-                            showResults(result.thumbnail, result.variants, result.author, result.text, rawUrl);
-                            return;
-                        }
-                    } catch (err) { console.warn(`${svc.name} failed:`, err); }
+                // Attacher les événements après construction
+                const saveLibBtn = document.getElementById('saveToLibraryBtn');
+                if (saveLibBtn) saveLibBtn.onclick = () => { if (currentVideoData) { saveToLibrary(currentVideoData); renderLibrary(); } };
+                const discordMain = document.getElementById('discordMainBtn');
+                if (discordMain) discordMain.onclick = () => { if (currentVideoData) sendToDiscordDirect(currentVideoData.url, currentVideoData.title, currentVideoData.author ? `@${currentVideoData.author}` : ''); };
+                const miniBtn = document.getElementById('miniPlayerBtn');
+                if (miniBtn) miniBtn.onclick = () => { if (currentVideoData) showMiniPlayer(currentVideoData.url, currentVideoData.title); };
+                const qrMain = document.getElementById('qrMainBtn');
+                if (qrMain) qrMain.onclick = () => { if (currentVideoData) showQRCode(currentVideoData.url); };
+                const qrCurrent = document.getElementById('qrCurrentBtn');
+                if (qrCurrent) {
+                    qrCurrent.onclick = () => {
+                        const video = document.getElementById('previewVideo');
+                        const src = video ? (video.querySelector('source')?.src || video.src) : null;
+                        if (src) showQRCode(src);
+                    };
                 }
-                showError("Aucune vidéo trouvée après 3 services.", "Le tweet ne contient pas de vidéo publique ou API momentanément indisponible.");
+                const shareCurrent = document.getElementById('shareCurrentBtn');
+                if (shareCurrent) {
+                    const shareDropdown = createShareButton(best.url, title);
+                    shareCurrent.parentNode.replaceChild(shareDropdown, shareCurrent);
+                }
+                document.querySelectorAll('.share-btn').forEach(btn => {
+                    const dropdown = createShareButton(btn.dataset.url, btn.dataset.title);
+                    btn.parentNode.replaceChild(dropdown, btn);
+                });
+                const discordCurrent = document.getElementById('discordCurrentBtn');
+                if (discordCurrent) {
+                    discordCurrent.onclick = () => {
+                        const video = document.getElementById('previewVideo');
+                        const src = video ? (video.querySelector('source')?.src || video.src) : null;
+                        if (src) sendToDiscordDirect(src, title, author ? `@${author}` : '');
+                    };
+                }
+                document.querySelectorAll('.discord-send-btn').forEach(btn => {
+                    btn.onclick = () => { sendToDiscordDirect(btn.dataset.url, title, author ? `@${author}` : ''); };
+                });
+                document.querySelectorAll('.download-btn').forEach(btn => {
+                    btn.onclick = () => showFormatModal(btn.dataset.url);
+                });
+                const downloadCurrent = document.getElementById('downloadCurrentBtn');
+                if (downloadCurrent) {
+                    downloadCurrent.onclick = () => {
+                        const video = document.getElementById('previewVideo');
+                        const src = video ? (video.querySelector('source')?.src || video.src) : null;
+                        if (src) showFormatModal(src);
+                    };
+                }
+                document.querySelectorAll('.save-library').forEach(btn => {
+                    btn.onclick = () => {
+                        saveToLibrary({
+                            url: btn.dataset.url, thumbnail, title,
+                            quality: btn.dataset.quality, author, authorName
+                        });
+                        renderLibrary();
+                    };
+                });
+                document.querySelectorAll('.qr-btn').forEach(btn => btn.onclick = () => showQRCode(btn.dataset.url));
+                const fullscreenBtn = document.getElementById('fullscreenBtn');
+                if (fullscreenBtn) {
+                    fullscreenBtn.onclick = () => {
+                        const video = document.getElementById('previewVideo');
+                        if (video && video.requestFullscreen) video.requestFullscreen();
+                    };
+                }
             }
 
-            analyzeBtn.onclick = analyzeTweet;
-            urlInput.onkeypress = e => { if(e.key === 'Enter') analyzeTweet(); };
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            if (analyzeBtn) analyzeBtn.onclick = analyzeTweet;
+            const urlInput = document.getElementById('tweetUrl');
+            if (urlInput) urlInput.onkeypress = e => { if (e.key === 'Enter') analyzeTweet(); };
+            
+            // Initial render
             renderHistory();
-            hideAll();
-            initialDiv.classList.remove('hidden');
-        })();
-    </script>
-</body>
-</html>
-                                    for (let v of media.videoVariants) if (v.content_type === 'video/mp4' && v.url) variants.push({ bitrate: v.bitrate || 0, url: v.url });
-                                }
-                            }
-                        }
-                    }
-                    if (!variants.length && data.mediaURLs?.length) variants = data.mediaURLs.map(url => ({ bitrate: 0, url }));
-                    author = data.user_screen_name || data.user?.screen_name;
-                    text = data.text;
-                }
-                else if (source === 'fx' || (data.tweet && data.tweet.media)) {
-                    const tweet = data.tweet;
-                    for (let media of tweet.media?.all || []) {
-                        if (media.type === 'video' && media.variants) {
-                            for (let v of media.variants) if (v.content_type === 'video/mp4' && v.url) variants.push({ bitrate: v.bitrate || 0, url: v.url });
-                            thumbnail = media.thumbnail_url || thumbnail;
-                        }
-                    }
-                    author = tweet.author?.screen_name;
-                    text = tweet.text;
-                }
-                const unique = new Map();
-                for (let v of variants) if (!unique.has(v.url)) unique.set(v.url, v);
-                return { variants: Array.from(unique.values()), thumbnail, author, text };
-            }
-            async function fetchVxTwitter(tweetUrl) {
-                const path = new URL(tweetUrl).pathname;
-                const resp = await fetchWithTimeout(`https://api.vxtwitter.com${path}`);
-                if (!resp.ok) throw new Error(`vxTwitter ${resp.status}`);
-                const data = await resp.json();
-                return { ...extractVariantsFromData(data, 'vx'), raw: data };
-            }
-            async function fetchFxTwitter(tweetUrl) {
-                const path = new URL(tweetUrl).pathname;
-                const resp = await fetchWithTimeout(`https://api.fxtwitter.com${path}`);
-                if (!resp.ok) throw new Error(`fxTwitter ${resp.status}`);
-                const data = await resp.json();
-                return { ...extractVariantsFromData(data, 'fx'), raw: data };
-            }
-            async function fetchTwitsave(tweetUrl) {
-                const resp = await fetchWithTimeout(`https://twitsave.app/api/get?url=${encodeURIComponent(tweetUrl)}`);
-                if (!resp.ok) throw new Error(`twitsave ${resp.status}`);
-                const json = await resp.json();
-                if (!json.success || !json.data?.video) throw new Error("No video");
-                const variants = json.data.video.map(v => ({ bitrate: v.quality === 'HD' ? 2000000 : 800000, url: v.url }));
-                return { variants, thumbnail: json.data.thumbnail || null, author: "twitsave", text: null, raw: json };
-            }
-
-            // Fonction de partage (Web Share) pour mobile
-            async function shareVideo(url, title = "Vidéo X") {
-                if (navigator.share) {
-                    try {
-                        await navigator.share({ title: "X Video", text: "Téléchargez cette vidéo", url: url });
-                        showToast("Partage lancé");
-                    } catch(e) { if (e.name !== 'AbortError') showToast("Partage annulé ou non supporté"); }
-                } else {
-                    showToast("Partage non supporté par ce navigateur. Utilisez le lien direct.");
-                }
-            }
-
-            // Affichage des résultats avec focus mobile
-            function showResults(thumbnailUrl, variants, author, text, tweetUrlRaw) {
-                hideAll();
-                resultDiv.classList.remove('hidden');
-                lastVariants = variants;
-                const sorted = [...variants].sort((a,b) => (b.bitrate||0) - (a.bitrate||0));
-                const bestVideo = sorted[0]?.url || '';
-
-                const getLabelWithSize = (bitrate) => {
-                    if (!bitrate) return "Standard";
-                    if (bitrate >= 1500000) return `1080p+ (${(bitrate/1000).toFixed(0)} kbps)`;
-                    if (bitrate >= 800000) return `720p (${(bitrate/1000).toFixed(0)} kbps)`;
-                    if (bitrate >= 400000) return `480p (${(bitrate/1000).toFixed(0)} kbps)`;
-                    return `Basse qualité (${(bitrate/1000).toFixed(0)} kbps)`;
-                };
-
-                let qualitiesHtml = '';
-                for (let v of sorted) {
-                    if (!v.url) continue;
-                    qualitiesHtml += `
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-gray-100 dark:bg-gray-800/60 rounded-xl p-3">
-                            <span class="font-medium text-sm">${getLabelWithSize(v.bitrate)}</span>
-                            <div class="flex flex-wrap gap-2">
-                                <a href="${escapeHtml(v.url)}" target="_blank" class="bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg text-sm font-medium inline-block">⬇️ Télécharger</a>
-                                <button data-url="${escapeHtml(v.url)}" class="copyLinkBtn bg-gray-500/20 hover:bg-gray-600 p-1.5 rounded-lg text-xs">📋 Copier lien</button>
-                                <button data-url="${escapeHtml(v.url)}" class="qrBtn bg-gray-500/20 hover:bg-purple-600 p-1.5 rounded-lg text-xs">📱 QR</button>
-                                <button data-url="${escapeHtml(v.url)}" class="shareBtn bg-green-600/40 hover:bg-green-700 p-1.5 rounded-lg text-xs">📤 Partager</button>
-                            </div>
-                        </div>
-                    `;
-                }
-
-                const videoPreview = bestVideo ? `
-                    <div class="mb-4 rounded-xl overflow-hidden bg-black/30">
-                        <video controls class="w-full max-h-80" poster="${thumbnailUrl || ''}">
-                            <source src="${escapeHtml(bestVideo)}" type="video/mp4">
-                        </video>
-                        <p class="text-xs text-center text-gray-400 p-1">▶️ Aperçu - utilisez les liens ci-dessous pour télécharger</p>
-                    </div>
-                ` : '';
-
-                const tweetTextHtml = text ? `<p class="text-gray-600 dark:text-gray-300 text-sm italic line-clamp-2">${escapeHtml(text.substring(0, 180))}</p>` : '';
-
-                resultDiv.innerHTML = `
-                    <div class="space-y-5">
-                        <div class="flex flex-col md:flex-row gap-4 bg-gray-100/50 dark:bg-gray-800/30 p-4 rounded-xl">
-                            ${thumbnailUrl ? `<img src="${escapeHtml(thumbnailUrl)}" class="w-32 h-32 object-cover rounded-lg" onerror="this.style.display='none'" alt="miniature">` : '<div class="w-32 h-32 bg-gray-700 rounded-lg"></div>'}
-                            <div class="flex-1">
-                                <div class="flex flex-wrap gap-2 items-center">
-                                    <span class="bg-green-600/30 text-green-700 dark:text-green-300 text-xs px-2 py-0.5 rounded-full">✅ Vidéo trouvée</span>
-                                    ${author ? `<span class="text-gray-500 dark:text-gray-400 text-sm">@${escapeHtml(author)}</span>` : ''}
-                                </div>
-                                ${tweetTextHtml}
-                                <button id="copyTweetUrlBtn" class="mt-2 text-xs text-blue-500 hover:underline">🔗 Copier l'URL du tweet</button>
-                            </div>
-                        </div>
-                        ${videoPreview}
-                        <div class="bg-gray-100 dark:bg-gray-900/70 rounded-xl p-4">
-                            <h3 class="font-semibold mb-3 flex items-center gap-2">📲 Qualités disponibles</h3>
-                            <div class="grid gap-2">${qualitiesHtml}</div>
-                            <p class="text-xs text-gray-500 mt-3 bg-yellow-100 dark:bg-yellow-900/20 p-2 rounded-lg">📱 <strong>Sur mobile :</strong> appuyez longuement sur "Télécharger" → "Enregistrer la vidéo". Ou utilisez "Partager" pour l'envoyer dans une application de téléchargement.</p>
-                        </div>
-                    </div>
-                `;
-
-                // Attacher événements
-                document.querySelectorAll('.copyLinkBtn').forEach(btn => {
-                    btn.addEventListener('click', async () => { await navigator.clipboard.writeText(btn.dataset.url); showToast('Lien vidéo copié !'); });
-                });
-                document.querySelectorAll('.qrBtn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        let popup = document.getElementById('dynamicQrPopup');
-                        if(popup) popup.remove();
-                        popup = document.createElement('div');
-                        popup.id = 'dynamicQrPopup';
-                        popup.className = 'qr-popup p-3 shadow-2xl rounded-xl bg-white dark:bg-gray-800';
-                        popup.innerHTML = `<div class="text-sm font-medium mb-2">📱 Scannez</div><div id="qrCodeContainer"></div><button class="text-xs mt-2 text-blue-500">Fermer</button>`;
-                        document.body.appendChild(popup);
-                        new QRCode(popup.querySelector('#qrCodeContainer'), { text: btn.dataset.url, width: 120, height: 120 });
-                        popup.querySelector('button').onclick = () => popup.remove();
-                    });
-                });
-                document.querySelectorAll('.shareBtn').forEach(btn => {
-                    btn.addEventListener('click', () => shareVideo(btn.dataset.url, "Vidéo X"));
-                });
-                document.getElementById('copyTweetUrlBtn')?.addEventListener('click', async () => { await navigator.clipboard.writeText(tweetUrlRaw); showToast('URL tweet copiée'); });
-
-                // Sauvegarde historique
-                saveHistory(tweetUrlRaw, bestVideo, author, thumbnailUrl, getLabelWithSize(sorted[0]?.bitrate || 0));
-            }
-
-            // Analyse principale
-            async function analyzeTweet() {
-                const rawUrl = urlInput.value.trim();
-                if (!rawUrl) { showError("Veuillez entrer une URL.", null); return; }
-                if (!rawUrl.includes('/status/')) { showError("URL invalide - doit contenir /status/", null); return; }
-                showLoading();
-
-                const services = [
-                    { name: 'vxTwitter', fn: fetchVxTwitter },
-                    { name: 'fxTwitter', fn: fetchFxTwitter },
-                    { name: 'twitsave', fn: fetchTwitsave }
-                ];
-                for (const svc of services) {
-                    try {
-                        const result = await svc.fn(rawUrl);
-                        if (result.variants && result.variants.length > 0) {
-                            showResults(result.thumbnail, result.variants, result.author, result.text, rawUrl);
-                            return;
-                        }
-                    } catch (err) { console.warn(`${svc.name} failed:`, err); }
-                }
-                showError("Aucune vidéo trouvée après 3 services.", "Le tweet ne contient pas de vidéo publique ou API momentanément indisponible.");
-            }
-
-            analyzeBtn.onclick = analyzeTweet;
-            urlInput.onkeypress = e => { if(e.key === 'Enter') analyzeTweet(); };
-            renderHistory();
-            hideAll();
-            initialDiv.classList.remove('hidden');
+            renderLibrary();
+            renderTechLogs();
         })();
     </script>
 </body>
