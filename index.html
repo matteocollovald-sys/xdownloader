@@ -25,7 +25,7 @@
         .dark .quality-card:hover, .dark .queue-item:hover { background: #374151; }
         .light .quality-card:hover, .light .queue-item:hover { background: #e5e7eb; }
         .theme-transition { transition: background 0.3s, color 0.3s, border-color 0.3s; }
-        video { background-color: black; max-width: 100%; height: auto; border-radius: 0.5rem; }
+        video { background-color: black; max-width: 100%; height: auto; border-radius: 0.5rem; min-height: 200px; }
         audio { border-radius: 0.5rem; }
         .toast { position: fixed; bottom: 20px; right: 20px; z-index: 1000; animation: slideIn 0.3s ease; background: rgba(0,0,0,0.8); color: white; padding: 8px 16px; border-radius: 8px; font-size: 14px; }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
@@ -53,6 +53,7 @@
         [role="dialog"] { background-color: rgba(0,0,0,0.8); }
         button, [role="button"], a { cursor: pointer; }
         img { max-width: 100%; height: auto; }
+        .video-fallback { background: #1a1a2e; min-height: 200px; display: flex; align-items: center; justify-content: center; text-align: center; color: white; flex-direction: column; gap: 10px; }
         @media (max-width: 640px) { .flex.gap-2 { gap: 0.5rem; } .px-4 { padding-left: 1rem; padding-right: 1rem; } }
     </style>
 </head>
@@ -542,13 +543,15 @@
                 finally { if (progressDiv) progressDiv.classList.add('hidden'); }
             }
 
-            // ========== PROXY CORS POUR VIDÉO ==========
-            const CORS_PROXY = 'https://corsproxy.io/?';
+            // ========== PROXY CORS (All Origins - plus fiable) ==========
+            const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+            
             async function loadVideoWithProxy(videoUrl, videoElement) {
                 if (!videoElement) return;
                 try {
                     showToast("Chargement de la vidéo...");
                     const proxiedUrl = CORS_PROXY + encodeURIComponent(videoUrl);
+                    console.log("Tentative avec proxy:", proxiedUrl);
                     const response = await fetch(proxiedUrl);
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
                     const blob = await response.blob();
@@ -560,10 +563,15 @@
                         showToast("✅ Vidéo prête");
                     };
                 } catch(e) {
-                    console.error("Erreur chargement vidéo:", e);
-                    showToast("⚠️ Chargement direct (peut échouer selon CORS)");
-                    videoElement.src = videoUrl;
-                    videoElement.load();
+                    console.error("Erreur chargement vidéo via proxy:", e);
+                    showToast("💡 Cliquez sur 'Télécharger' pour obtenir la vidéo");
+                    // Fallback élégant : afficher un message au lieu d'une erreur moche
+                    videoElement.style.background = '#1a1a2e';
+                    videoElement.style.minHeight = '200px';
+                    videoElement.style.display = 'flex';
+                    videoElement.style.alignItems = 'center';
+                    videoElement.style.justifyContent = 'center';
+                    videoElement.innerHTML = `<div class="video-fallback"><p>🎬 Vidéo disponible</p><p style="font-size:12px;">Cliquez sur "📥 Télécharger" ci-dessous</p></div>`;
                 }
             }
 
@@ -745,7 +753,6 @@
                 updateSEOTitle(title);
                 currentVideoData = { url: best.url, thumbnail, title, quality: best.bitrate >= 1000000 ? 'HD' : 'Standard', author: author ? escapeHtml(author) : null, authorName: authorName ? escapeHtml(authorName) : null };
                 
-                // Sauvegarde historique
                 history = [{ url: rawUrl, title: title.substring(0, 50), thumbnail, date: new Date().toISOString() }, ...history.filter(h => h.url !== rawUrl)].slice(0, 20);
                 localStorage.setItem('videoHistory', JSON.stringify(history));
                 renderHistory();
@@ -768,7 +775,7 @@
                         </div>
                         <div class="dark:bg-gray-800/40 light:bg-gray-200/40 rounded-xl p-4">
                             <h3 class="font-semibold mb-2">🎬 Aperçu vidéo</h3>
-                            <video id="${videoId}" controls crossorigin="anonymous" referrerpolicy="no-referrer" class="w-full max-h-96 rounded-lg shadow-lg" poster="${thumbnail ? escapeHtml(thumbnail) : ''}" style="background:black;"></video>
+                            <video id="${videoId}" controls crossorigin="anonymous" referrerpolicy="no-referrer" class="w-full max-h-96 rounded-lg shadow-lg" poster="${thumbnail ? escapeHtml(thumbnail) : ''}" style="background:black; min-height:200px;"></video>
                             <div class="flex gap-2 mt-3"><button id="fullscreenBtn" class="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded-lg text-sm">⛶ Plein écran</button><button id="downloadCurrentBtn" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-3 py-1.5 rounded-lg text-sm">📥 Télécharger</button><button id="shareCurrentBtn" class="bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded-lg text-sm">🔗 Partager</button><button id="discordCurrentBtn" class="discord-btn px-3 py-1.5 rounded-lg text-sm">💬 Discord</button><button id="qrCurrentBtn" class="bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-lg text-sm">📱 QR</button></div>
                         </div>
                         <div class="dark:bg-gray-900/60 light:bg-gray-200/60 rounded-xl p-4"><h3 class="font-semibold mb-3">📥 Qualités disponibles</h3><div class="space-y-2">${qualitiesHtml}</div></div>
@@ -777,13 +784,11 @@
                     </div>
                 `;
 
-                // Charger la vidéo avec proxy
                 const videoElement = document.getElementById(videoId);
                 if (videoElement && best.url) {
                     loadVideoWithProxy(best.url, videoElement);
                 }
 
-                // Événements
                 document.getElementById('saveToLibraryBtn')?.addEventListener('click', () => { if (currentVideoData) saveToLibrary(currentVideoData); });
                 document.getElementById('discordMainBtn')?.addEventListener('click', () => { if (currentVideoData) sendToDiscordDirect(currentVideoData.url, currentVideoData.title, currentVideoData.author); });
                 document.getElementById('miniPlayerBtn')?.addEventListener('click', () => { if (currentVideoData) showMiniPlayer(currentVideoData.url, currentVideoData.title); });
@@ -858,7 +863,7 @@
             }
             document.getElementById('clearHistoryBtn')?.addEventListener('click', () => { history = []; localStorage.removeItem('videoHistory'); renderHistory(); showToast('Historique effacé'); });
 
-            // ========== DISCORD (envoi du lien uniquement) ==========
+            // ========== DISCORD ==========
             async function sendToDiscordDirect(videoUrl, title, author) {
                 if (!discordWebhookUrl) { 
                     document.getElementById('discordConfigModal')?.classList.remove('hidden'); 
@@ -1012,7 +1017,7 @@
                     pendingDownloadUrl = null;
                 });
             });
-
+            
             // Fonctions GIF
             function showGifModal(videoUrl) {
                 const modal = document.getElementById('gifModal');
