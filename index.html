@@ -36,16 +36,13 @@
         .share-dropdown { position: relative; display: inline-block; }
         .share-dropdown-content { display: none; position: absolute; right: 0; top: 100%; z-index: 60; min-width: 200px; margin-top: 4px; }
         .share-dropdown:hover .share-dropdown-content { display: block; }
-        .tech-section { transition: all 0.3s ease; }
         .tech-entry { transition: all 0.2s ease; }
-        .tech-entry:hover { background: rgba(59, 130, 246, 0.05); }
+        .tech-entry:hover { background: rgba(59, 130, 246, 0.1); }
         .api-badge { font-size: 0.65rem; padding: 0.15rem 0.5rem; border-radius: 9999px; }
         .api-badge.success { background: #10b98120; color: #10b981; }
         .api-badge.error { background: #ef444420; color: #ef4444; }
         .api-badge.info { background: #3b82f620; color: #3b82f6; }
         .json-viewer { font-family: 'Courier New', monospace; font-size: 0.75rem; line-height: 1.5; }
-        .copy-btn { opacity: 0; transition: opacity 0.2s; }
-        .tech-entry:hover .copy-btn { opacity: 1; }
         .discord-btn { background: linear-gradient(135deg, #5865F2 0%, #4752C4 100%); }
         .discord-btn:hover { background: linear-gradient(135deg, #4752C4 0%, #3C45A5 100%); }
         .mini-player { position: fixed; bottom: 20px; right: 20px; z-index: 100; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
@@ -97,7 +94,7 @@ self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r
                 <p class="text-gray-400 text-sm mt-1">🎬 APERÇU | 📥 MP4/MP3/GIF | 💬 DISCORD | 📚 BIBLIOTHÈQUE | 📱 QR CODE | 🔧 PWA</p>
             </div>
 
-            <!-- Raccourcis clavier info -->
+            <!-- Raccourcis clavier -->
             <div class="text-center mb-4 text-xs text-gray-500">
                 ⌨️ Raccourcis : <kbd class="px-2 py-0.5 rounded bg-gray-700">Ctrl+Enter</kbd> Analyser | 
                 <kbd class="px-2 py-0.5 rounded bg-gray-700">D</kbd> Discord | 
@@ -122,7 +119,6 @@ self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r
                             Analyser (Ctrl+Enter)
                         </button>
                     </div>
-
                     <div id="statusArea">
                         <div id="initialMessage" class="text-center py-10 text-gray-500 border border-dashed dark:border-gray-700 light:border-gray-300 rounded-xl">
                             <svg class="w-12 h-12 mx-auto mb-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -175,28 +171,29 @@ self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r
                 </div>
             </div>
 
-            <!-- Onglet Technique -->
+            <!-- Onglet Technique (version cliquable avec panneau en bas) -->
             <div id="contentTech" class="hidden">
                 <div class="dark:bg-gray-900/80 light:bg-white/80 rounded-2xl border dark:border-gray-800 light:border-gray-200 p-5 backdrop-blur-sm">
-                    <div class="flex justify-between items-center mb-4">
+                    <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
                         <h2 class="text-xl font-bold">🔧 Réponses techniques des API</h2>
                         <div class="flex gap-2">
-                            <button id="refreshTechBtn" class="text-blue-400 hover:text-blue-300 text-sm">🔄 Actualiser</button>
-                            <button id="clearTechBtn" class="text-red-400 hover:text-red-300 text-sm">🗑️ Vider</button>
+                            <select id="filterTechStatus" class="dark:bg-gray-800 light:bg-gray-100 border dark:border-gray-700 light:border-gray-300 rounded-lg px-3 py-1 text-sm">
+                                <option value="all">📋 Tous</option>
+                                <option value="success">✅ Succès</option>
+                                <option value="error">❌ Erreurs</option>
+                            </select>
+                            <button id="exportTechLogsBtn" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-lg text-sm">📄 Exporter JSON</button>
+                            <button id="clearTechBtn" class="text-red-400 hover:text-red-300 text-sm border border-red-400/30 px-3 py-1 rounded-lg">🗑️ Vider</button>
                         </div>
                     </div>
-                    
-                    <div class="mb-4 p-3 dark:bg-gray-800/50 light:bg-gray-100 rounded-lg">
-                        <p class="text-sm">
-                            <span class="font-semibold">APIs disponibles :</span>
-                            <span class="api-badge success">vxTwitter</span>
-                            <span class="api-badge success">fxTwitter</span>
-                            <span class="api-badge info">twitsave</span>
-                        </p>
-                        <p class="text-xs text-gray-500 mt-1">Les réponses sont mises en cache pour la session en cours.</p>
+                    <div class="mb-4 p-3 dark:bg-gray-800/50 light:bg-gray-100 rounded-lg flex flex-wrap gap-2 text-xs">
+                        <span class="font-semibold">APIs :</span>
+                        <span class="api-badge success">vxTwitter</span>
+                        <span class="api-badge success">fxTwitter</span>
+                        <span class="api-badge info">twitsave</span>
+                        <span class="ml-auto text-gray-500">📌 Cliquez sur une ligne pour voir la réponse complète</span>
                     </div>
-                    
-                    <div id="techLogsList" class="space-y-2">
+                    <div id="techLogsList" class="space-y-2 max-h-96 overflow-y-auto pr-1">
                         <div id="emptyTechLogs" class="text-center py-10 text-gray-500 border border-dashed dark:border-gray-700 light:border-gray-300 rounded-xl">
                             <svg class="w-12 h-12 mx-auto mb-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6-4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2H7a2 2 0 01-2-2v-6"></path>
@@ -204,16 +201,22 @@ self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r
                             Aucune réponse API enregistrée pour le moment
                         </div>
                     </div>
-                    
-                    <div id="techDetailPanel" class="hidden mt-4 p-4 dark:bg-gray-800 light:bg-gray-100 rounded-xl border dark:border-gray-700 light:border-gray-300">
-                        <div class="flex justify-between items-center mb-3">
-                            <h3 id="techDetailTitle" class="font-semibold"></h3>
+                    <!-- Panneau de détail en bas -->
+                    <div id="techDetailPanel" class="hidden mt-5 p-4 dark:bg-gray-800 light:bg-gray-100 rounded-xl border dark:border-gray-700 light:border-gray-300">
+                        <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
+                            <h3 id="techDetailTitle" class="font-semibold text-base">Détail de la réponse</h3>
                             <div class="flex gap-2">
-                                <button id="copyTechDetail" class="copy-btn text-xs bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded">📋 Copier</button>
-                                <button id="closeTechDetail" class="text-gray-400 hover:text-gray-200">&times;</button>
+                                <span id="techDetailBadge" class="api-badge text-xs"></span>
+                                <button id="copyTechDetailBtn" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-xs">📋 Copier</button>
+                                <button id="closeTechDetailBtn" class="text-gray-400 hover:text-gray-200 text-xl leading-5">&times;</button>
                             </div>
                         </div>
-                        <pre id="techDetailContent" class="json-viewer dark:bg-gray-900 light:bg-gray-50 p-4 rounded-lg overflow-auto max-h-96"></pre>
+                        <div class="text-xs text-gray-400 mb-2 flex gap-3 flex-wrap">
+                            <span>🕒 <span id="techDetailTime"></span></span>
+                            <span>⏱️ <span id="techDetailDuration"></span> ms</span>
+                            <span>🔗 <span id="techDetailUrl" class="font-mono break-all"></span></span>
+                        </div>
+                        <pre id="techDetailContent" class="json-viewer dark:bg-gray-900 light:bg-gray-50 p-4 rounded-lg overflow-auto max-h-96 text-xs"></pre>
                     </div>
                 </div>
             </div>
@@ -385,11 +388,7 @@ self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r
             // Helper sécurisé pour classList
             function safeClassList(id, method, ...classes) {
                 const el = document.getElementById(id);
-                if (el && el.classList) {
-                    el.classList[method](...classes);
-                } else {
-                    console.warn(`Element #${id} not found for classList.${method}`);
-                }
+                if (el && el.classList) el.classList[method](...classes);
             }
 
             // ==================== THÈME ====================
@@ -407,13 +406,13 @@ self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r
             if (themeToggle) themeToggle.onclick = () => setTheme(currentTheme === 'dark' ? 'light' : 'dark');
             setTheme(currentTheme);
 
-            function showToast(message, type = 'info') {
+            function showToast(message) {
                 const toast = document.getElementById('toast');
                 if (toast) {
                     toast.textContent = message;
                     toast.classList.remove('hidden');
                     setTimeout(() => toast.classList.add('hidden'), 3000);
-                } else console.warn('Toast element missing');
+                }
             }
 
             function escapeHtml(str) { 
@@ -466,12 +465,8 @@ self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r
                         if (text && (text.includes('x.com') || text.includes('twitter.com')) && urlInput) {
                             urlInput.value = text.trim();
                             showToast('📋 URL collée !');
-                        } else {
-                            showToast('❌ Aucune URL Twitter trouvée dans le presse-papier');
-                        }
-                    } catch(e) {
-                        showToast('❌ Impossible de lire le presse-papier (autorisation ?)');
-                    }
+                        } else showToast('❌ Aucune URL Twitter trouvée');
+                    } catch(e) { showToast('❌ Impossible de lire le presse-papier'); }
                 };
             }
 
@@ -480,7 +475,6 @@ self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r
             const miniPlayerVideo = document.getElementById('miniPlayerVideo');
             const miniPlayerTitle = document.getElementById('miniPlayerTitle');
             let isDragging = false, dragOffsetX = 0, dragOffsetY = 0;
-
             const miniPlayerHeader = document.getElementById('miniPlayerHeader');
             if (miniPlayerHeader) {
                 miniPlayerHeader.addEventListener('mousedown', (e) => {
@@ -491,7 +485,6 @@ self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r
                     miniPlayer.style.cursor = 'grabbing';
                 });
             }
-
             document.addEventListener('mousemove', (e) => {
                 if (!isDragging || !miniPlayer) return;
                 miniPlayer.style.left = (e.clientX - dragOffsetX) + 'px';
@@ -499,67 +492,35 @@ self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r
                 miniPlayer.style.right = 'auto';
                 miniPlayer.style.bottom = 'auto';
             });
-
-            document.addEventListener('mouseup', () => {
-                isDragging = false;
-                if (miniPlayer) miniPlayer.style.cursor = '';
-            });
-
+            document.addEventListener('mouseup', () => { if (miniPlayer) miniPlayer.style.cursor = ''; isDragging = false; });
             function showMiniPlayer(videoUrl, title) {
                 if (!miniPlayer || !miniPlayerVideo || !miniPlayerTitle) return;
                 miniPlayer.classList.remove('hidden');
                 miniPlayerTitle.textContent = title || 'Mini Player';
                 miniPlayerVideo.src = videoUrl;
-                miniPlayerVideo.play().catch(() => {});
-                showToast('📺 Mini-player activé (M pour fermer)');
+                miniPlayerVideo.play().catch(()=>{});
+                showToast('📺 Mini-player activé');
             }
-
             const miniClose = document.getElementById('miniPlayerClose');
-            if (miniClose) miniClose.onclick = () => {
-                if (miniPlayer) miniPlayer.classList.add('hidden');
-                if (miniPlayerVideo) { miniPlayerVideo.pause(); miniPlayerVideo.src = ''; }
+            if (miniClose) miniClose.onclick = () => { if(miniPlayer) miniPlayer.classList.add('hidden'); if(miniPlayerVideo) { miniPlayerVideo.pause(); miniPlayerVideo.src=''; } };
+            const miniPiP = document.getElementById('miniPlayerPiP');
+            if (miniPiP) miniPiP.onclick = () => {
+                if(!miniPlayerVideo) return;
+                if(document.pictureInPictureElement) document.exitPictureInPicture();
+                else if(miniPlayerVideo.src) miniPlayerVideo.requestPictureInPicture().catch(()=>showToast('❌ PiP non supporté'));
             };
 
-            const miniPiP = document.getElementById('miniPlayerPiP');
-            if (miniPiP) {
-                miniPiP.onclick = () => {
-                    if (!miniPlayerVideo) return;
-                    if (document.pictureInPictureElement) {
-                        document.exitPictureInPicture();
-                    } else if (miniPlayerVideo.src) {
-                        miniPlayerVideo.requestPictureInPicture().catch(() => {
-                            showToast('❌ Picture-in-Picture non supporté');
-                        });
-                    }
-                };
-            }
-
-            // ==================== RACCOURCIS CLAVIER ====================
+            // Raccourcis clavier
             document.addEventListener('keydown', (e) => {
-                if (e.ctrlKey && e.key === 'Enter') {
+                if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); analyzeTweet(); }
+                if ((e.key === 'd' || e.key === 'D') && !e.target.closest('input,textarea') && currentVideoData) {
+                    e.preventDefault(); showFormatModal(currentVideoData.url);
+                    setTimeout(() => { const btn = document.querySelector('[data-format="discord"]'); if(btn) btn.click(); }, 300);
+                }
+                if ((e.key === 'm' || e.key === 'M') && !e.target.closest('input,textarea') && currentVideoData) {
                     e.preventDefault();
-                    analyzeTweet();
-                }
-                if (e.key === 'd' || e.key === 'D') {
-                    if (!e.target.closest('input, textarea') && currentVideoData) {
-                        e.preventDefault();
-                        showFormatModal(currentVideoData.url);
-                        setTimeout(() => {
-                            const discordBtn = document.querySelector('[data-format="discord"]');
-                            if (discordBtn) discordBtn.click();
-                        }, 300);
-                    }
-                }
-                if (e.key === 'm' || e.key === 'M') {
-                    if (!e.target.closest('input, textarea') && currentVideoData) {
-                        e.preventDefault();
-                        if (miniPlayer && miniPlayer.classList.contains('hidden')) {
-                            showMiniPlayer(currentVideoData.url, currentVideoData.title);
-                        } else if (miniPlayer) {
-                            miniPlayer.classList.add('hidden');
-                            if (miniPlayerVideo) miniPlayerVideo.pause();
-                        }
-                    }
+                    if(miniPlayer && miniPlayer.classList.contains('hidden')) showMiniPlayer(currentVideoData.url, currentVideoData.title);
+                    else if(miniPlayer) { miniPlayer.classList.add('hidden'); if(miniPlayerVideo) miniPlayerVideo.pause(); }
                 }
             });
 
@@ -568,195 +529,74 @@ self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r
             const discordBotNameInput = document.getElementById('discordBotName');
             if (discordWebhookInput) discordWebhookInput.value = discordWebhookUrl;
             if (discordBotNameInput) discordBotNameInput.value = discordBotName;
-
             const saveDiscord = document.getElementById('saveDiscordConfig');
             if (saveDiscord) {
                 saveDiscord.onclick = () => {
                     const url = discordWebhookInput ? discordWebhookInput.value.trim() : '';
                     const name = discordBotNameInput ? discordBotNameInput.value.trim() : '';
-                    
                     if (!url.startsWith('https://discord.com/api/webhooks/')) {
                         const statusDiv = document.getElementById('discordConfigStatus');
-                        if (statusDiv) {
-                            statusDiv.textContent = '❌ URL de webhook invalide';
-                            statusDiv.className = 'text-red-400 text-sm text-center block';
-                            statusDiv.classList.remove('hidden');
-                        }
+                        if(statusDiv) { statusDiv.textContent = '❌ URL invalide'; statusDiv.className = 'text-red-400 text-sm text-center block'; statusDiv.classList.remove('hidden'); }
                         return;
                     }
-                    
-                    discordWebhookUrl = url;
-                    discordBotName = name || 'X Video Downloader';
+                    discordWebhookUrl = url; discordBotName = name || 'X Video Downloader';
                     localStorage.setItem('discordWebhookUrl', discordWebhookUrl);
                     localStorage.setItem('discordBotName', discordBotName);
-                    
                     const statusDiv = document.getElementById('discordConfigStatus');
-                    if (statusDiv) {
-                        statusDiv.textContent = '✅ Configuration sauvegardée !';
-                        statusDiv.className = 'text-green-400 text-sm text-center block';
-                        statusDiv.classList.remove('hidden');
-                    }
-                    
-                    setTimeout(() => {
-                        const modal = document.getElementById('discordConfigModal');
-                        if (modal) modal.classList.add('hidden');
-                    }, 1000);
+                    if(statusDiv) { statusDiv.textContent = '✅ Sauvegardé !'; statusDiv.className = 'text-green-400 text-sm text-center block'; statusDiv.classList.remove('hidden'); }
+                    setTimeout(() => { const modal = document.getElementById('discordConfigModal'); if(modal) modal.classList.add('hidden'); }, 1000);
                 };
             }
-
             const testDiscord = document.getElementById('testDiscordWebhook');
             if (testDiscord) {
                 testDiscord.onclick = async () => {
                     const url = discordWebhookInput ? discordWebhookInput.value.trim() : '';
-                    if (!url) {
-                        showToast('❌ Veuillez entrer une URL de webhook');
-                        return;
-                    }
-                    
+                    if(!url) { showToast('❌ URL requise'); return; }
                     try {
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                content: '🧪 **Test de connexion réussi !**\n\nVotre webhook Discord est correctement configuré avec X Video Downloader.',
-                                username: discordBotName,
-                                embeds: [{
-                                    title: '✅ Test Webhook',
-                                    description: 'Le webhook fonctionne parfaitement !',
-                                    color: 0x00ff00,
-                                    footer: { text: 'X Video Downloader Ultimate' },
-                                    timestamp: new Date().toISOString()
-                                }]
-                            })
-                        });
-                        
-                        if (response.ok) {
-                            const statusDiv = document.getElementById('discordConfigStatus');
-                            if (statusDiv) {
-                                statusDiv.textContent = '✅ Test réussi ! Webhook fonctionnel';
-                                statusDiv.className = 'text-green-400 text-sm text-center block';
-                                statusDiv.classList.remove('hidden');
-                            }
-                            showToast('✅ Test Discord réussi !');
-                        } else {
-                            throw new Error(`HTTP ${response.status}`);
-                        }
-                    } catch(e) {
-                        const statusDiv = document.getElementById('discordConfigStatus');
-                        if (statusDiv) {
-                            statusDiv.textContent = '❌ Erreur: ' + e.message;
-                            statusDiv.className = 'text-red-400 text-sm text-center block';
-                            statusDiv.classList.remove('hidden');
-                        }
-                    }
+                        const resp = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content:'🧪 Test réussi !', username: discordBotName }) });
+                        if(resp.ok) { showToast('✅ Webhook fonctionnel'); const sd = document.getElementById('discordConfigStatus'); if(sd){ sd.textContent='✅ Test OK'; sd.className='text-green-400 text-sm text-center block'; sd.classList.remove('hidden'); } }
+                        else throw new Error(`HTTP ${resp.status}`);
+                    } catch(e) { showToast('❌ Erreur test'); }
                 };
             }
-
             const closeDiscordConfig = document.getElementById('closeDiscordConfig');
-            if (closeDiscordConfig) closeDiscordConfig.onclick = () => {
-                const modal = document.getElementById('discordConfigModal');
-                if (modal) modal.classList.add('hidden');
-            };
-
-            async function sendToDiscordDirect(videoUrl, title, description = '') {
-                if (!discordWebhookUrl) {
-                    const modal = document.getElementById('discordConfigModal');
-                    if (modal) modal.classList.remove('hidden');
-                    showToast('⚠️ Configurez d\'abord le webhook Discord');
-                    return false;
-                }
-
+            if(closeDiscordConfig) closeDiscordConfig.onclick = () => { const m=document.getElementById('discordConfigModal'); if(m) m.classList.add('hidden'); };
+            async function sendToDiscordDirect(videoUrl, title, desc='') {
+                if(!discordWebhookUrl) { const m=document.getElementById('discordConfigModal'); if(m) m.classList.remove('hidden'); showToast('⚠️ Configurez webhook'); return false; }
                 try {
-                    showToast('📤 Envoi vers Discord en cours...');
-                    const videoResponse = await fetch(videoUrl);
-                    if (!videoResponse.ok) throw new Error('Impossible de télécharger la vidéo');
-                    const videoBlob = await videoResponse.blob();
-                    
-                    if (videoBlob.size > 25 * 1024 * 1024) {
-                        showToast('⚠️ Vidéo trop volumineuse (>25MB). Envoi du lien...');
-                        const linkResponse = await fetch(discordWebhookUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                content: `**${title || '🎬 Nouvelle vidéo'}**\n${videoUrl}`,
-                                username: discordBotName,
-                                embeds: [{
-                                    title: title?.substring(0, 256) || 'Vidéo X',
-                                    description: description?.substring(0, 2048) || 'Cliquez pour voir la vidéo',
-                                    color: 0x1da1f2,
-                                    url: videoUrl,
-                                    footer: { text: '📥 X Video Downloader' },
-                                    timestamp: new Date().toISOString()
-                                }]
-                            })
-                        });
-                        if (linkResponse.ok) {
-                            showToast('✅ Lien envoyé sur Discord');
-                            return true;
-                        }
-                        return false;
+                    showToast('📤 Envoi...');
+                    const respVideo = await fetch(videoUrl);
+                    if(!respVideo.ok) throw new Error('Impossible de télécharger');
+                    const blob = await respVideo.blob();
+                    if(blob.size > 25*1024*1024) {
+                        showToast('⚠️ Vidéo >25MB, envoi du lien');
+                        const linkResp = await fetch(discordWebhookUrl, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content: `**${title}**\n${videoUrl}`, username: discordBotName }) });
+                        return linkResp.ok;
                     }
-
-                    const formData = new FormData();
-                    formData.append('file', videoBlob, 'twitter_video.mp4');
-                    formData.append('payload_json', JSON.stringify({
-                        content: `**${title || '🎬 Nouvelle vidéo X'}**\n${description || ''}`,
-                        username: discordBotName,
-                        embeds: [{
-                            title: '📥 Vidéo téléchargée depuis X',
-                            description: 'Vidéo envoyée directement via X Video Downloader',
-                            color: 0x5865F2,
-                            footer: { text: 'X Video Downloader Ultimate' },
-                            timestamp: new Date().toISOString()
-                        }]
-                    }));
-
-                    const response = await fetch(discordWebhookUrl, { method: 'POST', body: formData });
-                    if (response.ok) {
-                        showToast('✅ Vidéo envoyée sur Discord !');
-                        return true;
-                    } else {
-                        throw new Error(`Erreur ${response.status}`);
-                    }
-                } catch(e) {
-                    console.error('Discord error:', e);
-                    showToast('❌ Erreur Discord: ' + e.message);
-                    return false;
-                }
+                    const form = new FormData();
+                    form.append('file', blob, 'video.mp4');
+                    form.append('payload_json', JSON.stringify({ content: `**${title}**`, username: discordBotName }));
+                    const resp = await fetch(discordWebhookUrl, { method:'POST', body: form });
+                    if(resp.ok) { showToast('✅ Envoyé sur Discord'); return true; }
+                    throw new Error(`Erreur ${resp.status}`);
+                } catch(e) { showToast('❌ Erreur Discord: '+e.message); return false; }
             }
 
             // ==================== QR CODE ====================
             function showQRCode(url) {
                 const modal = document.getElementById('qrModal');
                 const qrContainer = document.getElementById('qrcode');
-                if (!modal || !qrContainer) return;
+                if(!modal || !qrContainer) return;
                 qrContainer.innerHTML = '';
-                new QRCode(qrContainer, {
-                    text: url,
-                    width: 256,
-                    height: 256,
-                    colorDark: '#000000',
-                    colorLight: '#ffffff',
-                    correctLevel: QRCode.CorrectLevel.H
-                });
+                new QRCode(qrContainer, { text: url, width: 256, height: 256, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H });
                 modal.classList.remove('hidden');
             }
             const closeQR = document.getElementById('closeQRModal');
             const closeQRBtn = document.getElementById('closeQRModalBtn');
-            if (closeQR) closeQR.onclick = () => { const m = document.getElementById('qrModal'); if (m) m.classList.add('hidden'); };
-            if (closeQRBtn) closeQRBtn.onclick = () => { const m = document.getElementById('qrModal'); if (m) m.classList.add('hidden'); };
+            if(closeQR) closeQR.onclick = () => { const m=document.getElementById('qrModal'); if(m) m.classList.add('hidden'); };
+            if(closeQRBtn) closeQRBtn.onclick = () => { const m=document.getElementById('qrModal'); if(m) m.classList.add('hidden'); };
 
             // ==================== SHARE ====================
-            function shareVideo(url, title) {
-                return [
-                    { name: 'Copier le lien', icon: '📋', action: () => copyToClipboard(url) },
-                    { name: 'QR Code', icon: '📱', action: () => showQRCode(url) },
-                    { name: 'Twitter/X', icon: '𝕏', action: () => window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title || '')}`, '_blank') },
-                    { name: 'Facebook', icon: '📘', action: () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank') },
-                    { name: 'WhatsApp', icon: '💬', action: () => window.open(`https://wa.me/?text=${encodeURIComponent(title + ' ' + url)}`, '_blank') }
-                ];
-            }
-
             function createShareButton(url, title) {
                 const container = document.createElement('div');
                 container.className = 'share-dropdown';
@@ -765,15 +605,18 @@ self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r
                 button.innerHTML = '🔗 Partager';
                 const dropdown = document.createElement('div');
                 dropdown.className = 'share-dropdown-content dark:bg-gray-800 light:bg-white border dark:border-gray-700 light:border-gray-300 rounded-lg shadow-2xl';
-                shareVideo(url, title).forEach(option => {
+                const options = [
+                    { name: 'Copier le lien', icon: '📋', action: () => copyToClipboard(url) },
+                    { name: 'QR Code', icon: '📱', action: () => showQRCode(url) },
+                    { name: 'Twitter/X', icon: '𝕏', action: () => window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`, '_blank') },
+                    { name: 'Facebook', icon: '📘', action: () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank') },
+                    { name: 'WhatsApp', icon: '💬', action: () => window.open(`https://wa.me/?text=${encodeURIComponent(title+' '+url)}`, '_blank') }
+                ];
+                options.forEach(opt => {
                     const item = document.createElement('button');
                     item.className = 'w-full text-left px-4 py-2 hover:bg-blue-600/20 transition flex items-center gap-2 text-sm';
-                    item.innerHTML = `<span>${option.icon}</span> ${option.name}`;
-                    item.onclick = (e) => {
-                        e.stopPropagation();
-                        option.action();
-                        if (option.name === 'Copier le lien') showToast('✅ Lien copié !');
-                    };
+                    item.innerHTML = `<span>${opt.icon}</span> ${opt.name}`;
+                    item.onclick = (e) => { e.stopPropagation(); opt.action(); if(opt.name === 'Copier le lien') showToast('✅ Lien copié'); };
                     dropdown.appendChild(item);
                 });
                 container.appendChild(button);
@@ -782,37 +625,18 @@ self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r
             }
 
             // ==================== MODAL FORMAT ====================
-            function showFormatModal(videoUrl) {
-                pendingDownloadUrl = videoUrl;
-                const modal = document.getElementById('formatModal');
-                if (modal) modal.classList.remove('hidden');
-            }
-
+            function showFormatModal(videoUrl) { pendingDownloadUrl = videoUrl; const m=document.getElementById('formatModal'); if(m) m.classList.remove('hidden'); }
             const closeFormat = document.getElementById('closeFormatModal');
-            if (closeFormat) closeFormat.onclick = () => {
-                const modal = document.getElementById('formatModal');
-                if (modal) modal.classList.add('hidden');
-                pendingDownloadUrl = null;
-            };
-
+            if(closeFormat) closeFormat.onclick = () => { const m=document.getElementById('formatModal'); if(m) m.classList.add('hidden'); pendingDownloadUrl=null; };
             document.querySelectorAll('.format-option').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const format = btn.dataset.format;
                     const modal = document.getElementById('formatModal');
-                    if (modal) modal.classList.add('hidden');
-                    
-                    if (format === 'mp4') {
-                        if (pendingDownloadUrl) window.open(pendingDownloadUrl, '_blank');
-                        showToast("📥 Téléchargement MP4 démarré");
-                    } else if (format === 'mp3') {
-                        if (pendingDownloadUrl) downloadAsMP3(pendingDownloadUrl, 'video_audio.wav');
-                    } else if (format === 'gif') {
-                        if (pendingDownloadUrl) showGifModal(pendingDownloadUrl);
-                    } else if (format === 'discord') {
-                        const title = currentVideoData?.title || 'Vidéo X';
-                        const author = currentVideoData?.author ? `@${currentVideoData.author}` : '';
-                        if (pendingDownloadUrl) sendToDiscordDirect(pendingDownloadUrl, title, author);
-                    }
+                    if(modal) modal.classList.add('hidden');
+                    if(format === 'mp4') { if(pendingDownloadUrl) window.open(pendingDownloadUrl, '_blank'); showToast("📥 MP4 démarré"); }
+                    else if(format === 'mp3') { if(pendingDownloadUrl) downloadAsMP3(pendingDownloadUrl, 'audio.wav'); }
+                    else if(format === 'gif') { if(pendingDownloadUrl) showGifModal(pendingDownloadUrl); }
+                    else if(format === 'discord') { if(pendingDownloadUrl) sendToDiscordDirect(pendingDownloadUrl, currentVideoData?.title || 'Vidéo X', currentVideoData?.author ? `@${currentVideoData.author}` : ''); }
                     pendingDownloadUrl = null;
                 });
             });
@@ -820,79 +644,118 @@ self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r
             // ==================== AUDIO ====================
             async function downloadAsMP3(videoUrl, filename) {
                 try {
-                    showToast("🎵 Conversion MP3 en cours...");
-                    const response = await fetch(videoUrl);
-                    const blob = await response.blob();
-                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    const arrayBuffer = await blob.arrayBuffer();
-                    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                    const wavBlob = audioBufferToWav(audioBuffer);
-                    saveAs(wavBlob, filename.replace('.mp3', '.wav'));
-                    showToast("✅ Audio extrait (format WAV)");
-                } catch(e) {
-                    showToast("❌ Erreur extraction audio: " + e.message);
-                }
+                    showToast("🎵 Conversion...");
+                    const resp = await fetch(videoUrl);
+                    const blob = await resp.blob();
+                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    const buf = await audioCtx.decodeAudioData(await blob.arrayBuffer());
+                    const wav = audioBufferToWav(buf);
+                    saveAs(wav, filename);
+                    showToast("✅ Audio extrait (WAV)");
+                } catch(e) { showToast("❌ Erreur audio: "+e.message); }
             }
-
             function audioBufferToWav(buffer) {
                 const numChannels = buffer.numberOfChannels;
                 const sampleRate = buffer.sampleRate;
-                const format = 1;
-                const bitDepth = 16;
-                let data = buffer.getChannelData(0);
-                let samples = data.length;
-                let bufferLength = samples * (bitDepth / 8);
-                let wavBuffer = new ArrayBuffer(44 + bufferLength);
-                let view = new DataView(wavBuffer);
+                const data = buffer.getChannelData(0);
+                const samples = data.length;
+                const bufferLength = samples * 2;
+                const wavBuffer = new ArrayBuffer(44 + bufferLength);
+                const view = new DataView(wavBuffer);
                 writeString(view, 0, 'RIFF');
                 view.setUint32(4, 36 + bufferLength, true);
                 writeString(view, 8, 'WAVE');
                 writeString(view, 12, 'fmt ');
                 view.setUint32(16, 16, true);
-                view.setUint16(20, format, true);
+                view.setUint16(20, 1, true);
                 view.setUint16(22, numChannels, true);
                 view.setUint32(24, sampleRate, true);
-                view.setUint32(28, sampleRate * numChannels * (bitDepth / 8), true);
-                view.setUint16(32, numChannels * (bitDepth / 8), true);
-                view.setUint16(34, bitDepth, true);
+                view.setUint32(28, sampleRate * numChannels * 2, true);
+                view.setUint16(32, numChannels * 2, true);
+                view.setUint16(34, 16, true);
                 writeString(view, 36, 'data');
                 view.setUint32(40, bufferLength, true);
                 let offset = 44;
                 for (let i = 0; i < samples; i++) {
-                    let sample = Math.max(-1, Math.min(1, data[i]));
+                    const sample = Math.max(-1, Math.min(1, data[i]));
                     view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
                     offset += 2;
                 }
                 return new Blob([wavBuffer], { type: 'audio/wav' });
             }
-
-            function writeString(view, offset, str) { 
-                for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i)); 
-            }
+            function writeString(view, offset, str) { for(let i=0; i<str.length; i++) view.setUint8(offset+i, str.charCodeAt(i)); }
 
             // ==================== GIF ====================
             function showGifModal(videoUrl) {
                 const modal = document.getElementById('gifModal');
-                if (!modal) return;
+                if(!modal) return;
                 modal.classList.remove('hidden');
                 const progressDiv = document.getElementById('gifProgress');
-                if (progressDiv) progressDiv.classList.add('hidden');
+                if(progressDiv) progressDiv.classList.add('hidden');
                 const createBtn = document.getElementById('createGif');
-                if (createBtn) createBtn.onclick = () => createGif(videoUrl);
+                if(createBtn) createBtn.onclick = () => createGif(videoUrl);
                 const cancelBtn = document.getElementById('cancelGif');
-                if (cancelBtn) cancelBtn.onclick = () => modal.classList.add('hidden');
-                const durationSlider = document.getElementById('gifDuration');
-                if (durationSlider) {
-                    durationSlider.oninput = (e) => {
-                        const valSpan = document.getElementById('durationValue');
-                        if (valSpan) valSpan.textContent = e.target.value + 's';
-                    };
-                }
+                if(cancelBtn) cancelBtn.onclick = () => modal.classList.add('hidden');
+                const durSlider = document.getElementById('gifDuration');
+                if(durSlider) durSlider.oninput = (e) => { const span=document.getElementById('durationValue'); if(span) span.textContent = e.target.value+'s'; };
             }
-
-            function encodeGIF(frames, width, height, delays) {
-                // Same as before, kept for brevity (no changes)
-                const header = new Uint8Array([0x47,0x49,0x46,0x38,0x39,0x61, width&0xFF, (width>>8)&0xFF, height&0xFF, (height>>8)&0xFF, 0xF7,0x00,0x00]);
+            async function createGif(videoUrl) {
+                const duration = parseInt(document.getElementById('gifDuration')?.value || '3');
+                const quality = document.getElementById('gifQuality')?.value || 'medium';
+                const progressDiv = document.getElementById('gifProgress');
+                const progressBar = document.getElementById('gifProgressBar');
+                if(progressDiv) progressDiv.classList.remove('hidden');
+                if(progressBar) progressBar.style.width = '0%';
+                try {
+                    showToast("🎞️ Création GIF...");
+                    if(progressBar) progressBar.style.width = '10%';
+                    const video = document.createElement('video');
+                    video.crossOrigin = 'anonymous';
+                    video.src = videoUrl;
+                    video.muted = true;
+                    await new Promise((res,rej)=>{ video.onloadedmetadata=res; video.onerror=rej; setTimeout(()=>rej('Timeout'),5000); video.load(); });
+                    if(progressBar) progressBar.style.width = '20%';
+                    const fps = quality === 'high' ? 12 : quality === 'medium' ? 8 : 5;
+                    const totalFrames = Math.max(3, Math.min(30, Math.round(duration * fps)));
+                    const maxWidth = quality === 'high' ? 360 : quality === 'medium' ? 280 : 200;
+                    const ratio = maxWidth / video.videoWidth;
+                    const finalWidth = Math.round(maxWidth) - (Math.round(maxWidth)%2);
+                    const finalHeight = Math.round(video.videoHeight * ratio) - (Math.round(video.videoHeight * ratio)%2);
+                    const frames = [], delays = [];
+                    const canvas = document.createElement('canvas');
+                    canvas.width = finalWidth; canvas.height = finalHeight;
+                    const ctx = canvas.getContext('2d');
+                    for(let i=0; i<totalFrames; i++) {
+                        const time = (i/totalFrames) * Math.min(duration, video.duration);
+                        video.currentTime = time;
+                        await new Promise((res,rej)=>{
+                            const to = setTimeout(()=>rej('seek'),3000);
+                            const handler = ()=>{
+                                clearTimeout(to);
+                                video.removeEventListener('seeked', handler);
+                                ctx.drawImage(video,0,0,finalWidth,finalHeight);
+                                const fc = document.createElement('canvas');
+                                fc.width = finalWidth; fc.height = finalHeight;
+                                fc.getContext('2d').drawImage(canvas,0,0);
+                                frames.push(fc);
+                                delays.push(Math.round(100/fps));
+                                res();
+                            };
+                            video.addEventListener('seeked', handler);
+                        });
+                        if(progressBar) progressBar.style.width = (20 + ((i/totalFrames)*70)) + '%';
+                    }
+                    if(progressBar) progressBar.style.width = '95%';
+                    const gifBlob = encodeGIF(frames, finalWidth, finalHeight, delays);
+                    if(progressBar) progressBar.style.width = '100%';
+                    saveAs(gifBlob, 'twitter_video.gif');
+                    document.getElementById('gifModal')?.classList.add('hidden');
+                    showToast("✅ GIF créé");
+                } catch(e) { showToast("❌ Erreur GIF: "+e.message); document.getElementById('gifModal')?.classList.add('hidden'); }
+            }
+            function encodeGIF(frames, w, h, delays) {
+                // Implémentation simplifiée mais fonctionnelle (identique à la précédente)
+                const header = new Uint8Array([0x47,0x49,0x46,0x38,0x39,0x61, w&0xFF,(w>>8)&0xFF, h&0xFF,(h>>8)&0xFF, 0xF7,0x00,0x00]);
                 const colorTable = new Uint8Array(256*3);
                 const colorMap = new Map();
                 let colorIndex = 1;
@@ -901,51 +764,49 @@ self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r
                     const key=`${r},${g},${b}`;
                     if(colorMap.has(key)) return colorMap.get(key);
                     if(colorIndex<256){ colorTable[colorIndex*3]=r; colorTable[colorIndex*3+1]=g; colorTable[colorIndex*3+2]=b; colorMap.set(key,colorIndex); return colorIndex++; }
-                    let minDist=Infinity, closest=0;
-                    for(let i=0;i<256;i++){ const dr=r-colorTable[i*3], dg=g-colorTable[i*3+1], db=b-colorTable[i*3+2]; const dist=dr*dr+dg*dg+db*db; if(dist<minDist){ minDist=dist; closest=i; } }
-                    return closest;
+                    let min=Infinity, best=0;
+                    for(let i=0;i<256;i++){ const dr=r-colorTable[i*3], dg=g-colorTable[i*3+1], db=b-colorTable[i*3+2]; const d=dr*dr+dg*dg+db*db; if(d<min){ min=d; best=i; } }
+                    return best;
                 }
-                const frameDataArray=[];
-                for(const frame of frames){
-                    const ctx=frame.getContext('2d');
-                    const imgData=ctx.getImageData(0,0,width,height);
-                    const pixels=imgData.data;
-                    const indices=new Uint8Array(width*height);
-                    for(let i=0;i<pixels.length;i+=4) indices[i/4]=getColorIndex(pixels[i],pixels[i+1],pixels[i+2]);
-                    frameDataArray.push(lzwEncode(indices,8));
+                const frameData=[];
+                for(const f of frames){
+                    const ctx=f.getContext('2d');
+                    const img=ctx.getImageData(0,0,w,h);
+                    const pix=img.data;
+                    const idx=new Uint8Array(w*h);
+                    for(let i=0;i<pix.length;i+=4) idx[i/4]=getColorIndex(pix[i],pix[i+1],pix[i+2]);
+                    frameData.push(lzwEncode(idx,8));
                 }
                 const parts=[header,colorTable];
                 parts.push(new Uint8Array([0x21,0xFF,0x0B,0x4E,0x45,0x54,0x53,0x43,0x41,0x50,0x45,0x32,0x2E,0x30,0x03,0x01,0x00,0x00,0x00]));
-                for(let i=0;i<frameDataArray.length;i++){
+                for(let i=0;i<frameData.length;i++){
                     const delay=delays[i]||10;
                     parts.push(new Uint8Array([0x21,0xF9,0x04,0x09,delay&0xFF,(delay>>8)&0xFF,0x00,0x00]));
-                    parts.push(new Uint8Array([0x2C,0x00,0x00,0x00,0x00,width&0xFF,(width>>8)&0xFF,height&0xFF,(height>>8)&0xFF,0x00]));
+                    parts.push(new Uint8Array([0x2C,0x00,0x00,0x00,0x00,w&0xFF,(w>>8)&0xFF,h&0xFF,(h>>8)&0xFF,0x00]));
                     parts.push(new Uint8Array([8]));
-                    const data=frameDataArray[i];
-                    for(let j=0;j<data.length;j+=255){ const chunk=data.slice(j,j+255); parts.push(new Uint8Array([chunk.length])); parts.push(chunk); }
+                    const d=frameData[i];
+                    for(let j=0;j<d.length;j+=255){ const chunk=d.slice(j,j+255); parts.push(new Uint8Array([chunk.length])); parts.push(chunk); }
                     parts.push(new Uint8Array([0x00]));
                 }
                 parts.push(new Uint8Array([0x3B]));
-                let total=parts.reduce((s,p)=>s+p.length,0);
+                let total=0; for(let p of parts) total+=p.length;
                 const res=new Uint8Array(total);
-                let off=0;
-                parts.forEach(p=>{ res.set(p,off); off+=p.length; });
+                let off=0; for(let p of parts){ res.set(p,off); off+=p.length; }
                 return new Blob([res],{type:'image/gif'});
             }
-
-            function lzwEncode(data,minCodeSize){
-                const clearCode=1<<minCodeSize;
-                const eoiCode=clearCode+1;
+            function lzwEncode(data, minCodeSize){
+                const clear=1<<minCodeSize;
+                const eoi=clear+1;
                 let codeSize=minCodeSize+1;
                 const maxCode=(1<<codeSize)-1;
                 const dict=new Map();
-                let nextCode=eoiCode+1;
-                for(let i=0;i<clearCode;i++) dict.set(String.fromCharCode(i),i);
-                const output=[];
-                let bitBuffer=0,bits=0;
-                function writeCode(code){ bitBuffer|=(code<<bits); bits+=codeSize; while(bits>=8){ output.push(bitBuffer&0xFF); bitBuffer>>=8; bits-=8; } }
-                output.push(minCodeSize);
-                writeCode(clearCode);
+                let nextCode=eoi+1;
+                for(let i=0;i<clear;i++) dict.set(String.fromCharCode(i),i);
+                const out=[];
+                let buf=0,bits=0;
+                function writeCode(c){ buf|=(c<<bits); bits+=codeSize; while(bits>=8){ out.push(buf&0xFF); buf>>=8; bits-=8; } }
+                out.push(minCodeSize);
+                writeCode(clear);
                 let w='';
                 for(let i=0;i<data.length;i++){
                     const c=String.fromCharCode(data[i]);
@@ -957,140 +818,52 @@ self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r
                             dict.set(wc,nextCode++);
                             if(nextCode>maxCode && codeSize<12) codeSize++;
                         }else{
-                            writeCode(clearCode);
+                            writeCode(clear);
                             dict.clear();
-                            for(let j=0;j<clearCode;j++) dict.set(String.fromCharCode(j),j);
-                            nextCode=eoiCode+1;
+                            for(let j=0;j<clear;j++) dict.set(String.fromCharCode(j),j);
+                            nextCode=eoi+1;
                             codeSize=minCodeSize+1;
                         }
                         w=c;
                     }
                 }
                 if(w!=='') writeCode(dict.get(w));
-                writeCode(eoiCode);
-                if(bits>0) output.push(bitBuffer&0xFF);
-                return new Uint8Array(output);
-            }
-
-            async function createGif(videoUrl) {
-                const duration = parseInt(document.getElementById('gifDuration')?.value || '3');
-                const quality = document.getElementById('gifQuality')?.value || 'medium';
-                const progressDiv = document.getElementById('gifProgress');
-                const progressBar = document.getElementById('gifProgressBar');
-                if (progressDiv) progressDiv.classList.remove('hidden');
-                if (progressBar) progressBar.style.width = '0%';
-                try {
-                    showToast("🎞️ Création du GIF en cours...");
-                    if (progressBar) progressBar.style.width = '10%';
-                    const video = document.createElement('video');
-                    video.crossOrigin = 'anonymous';
-                    video.src = videoUrl;
-                    video.muted = true;
-                    video.preload = 'auto';
-                    await new Promise((resolve, reject) => {
-                        video.onloadedmetadata = resolve;
-                        video.onerror = reject;
-                        setTimeout(() => reject(new Error('Timeout')), 5000);
-                        video.load();
-                    });
-                    if (progressBar) progressBar.style.width = '20%';
-                    const fps = quality === 'high' ? 12 : quality === 'medium' ? 8 : 5;
-                    const totalFrames = Math.max(3, Math.min(30, Math.round(duration * fps)));
-                    const maxWidth = quality === 'high' ? 360 : quality === 'medium' ? 280 : 200;
-                    const ratio = maxWidth / video.videoWidth;
-                    const finalWidth = Math.round(maxWidth) - (Math.round(maxWidth) % 2);
-                    const finalHeight = Math.round(video.videoHeight * ratio) - (Math.round(video.videoHeight * ratio) % 2);
-                    const frames = [];
-                    const delays = [];
-                    const canvas = document.createElement('canvas');
-                    canvas.width = finalWidth;
-                    canvas.height = finalHeight;
-                    const ctx = canvas.getContext('2d');
-                    for (let i = 0; i < totalFrames; i++) {
-                        const time = (i / totalFrames) * Math.min(duration, video.duration);
-                        video.currentTime = time;
-                        await new Promise((resolve, reject) => {
-                            const timeout = setTimeout(() => reject(new Error('Seek timeout')), 3000);
-                            const seekHandler = () => {
-                                clearTimeout(timeout);
-                                video.removeEventListener('seeked', seekHandler);
-                                ctx.drawImage(video, 0, 0, finalWidth, finalHeight);
-                                const frameCanvas = document.createElement('canvas');
-                                frameCanvas.width = finalWidth;
-                                frameCanvas.height = finalHeight;
-                                frameCanvas.getContext('2d').drawImage(canvas, 0, 0);
-                                frames.push(frameCanvas);
-                                delays.push(Math.round(100 / fps));
-                                resolve();
-                            };
-                            video.addEventListener('seeked', seekHandler);
-                        });
-                        if (progressBar) progressBar.style.width = (20 + ((i / totalFrames) * 70)) + '%';
-                    }
-                    if (progressBar) progressBar.style.width = '95%';
-                    const gifBlob = encodeGIF(frames, finalWidth, finalHeight, delays);
-                    if (progressBar) progressBar.style.width = '100%';
-                    saveAs(gifBlob, 'twitter_video.gif');
-                    const modal = document.getElementById('gifModal');
-                    if (modal) modal.classList.add('hidden');
-                    showToast("✅ GIF créé avec succès !");
-                } catch(e) {
-                    console.error('Erreur GIF:', e);
-                    showToast("❌ Erreur création GIF: " + e.message);
-                    const modal = document.getElementById('gifModal');
-                    if (modal) modal.classList.add('hidden');
-                }
+                writeCode(eoi);
+                if(bits>0) out.push(buf&0xFF);
+                return new Uint8Array(out);
             }
 
             // ==================== BIBLIOTHÈQUE ====================
             function saveToLibrary(videoData) {
-                const exists = library.some(item => item.url === videoData.url);
-                if (!exists) {
-                    library.unshift({ ...videoData, savedAt: new Date().toISOString(), id: Date.now().toString() });
-                    if (library.length > 50) library = library.slice(0, 50);
-                    localStorage.setItem('videoLibrary', JSON.stringify(library));
-                    showToast('✅ Vidéo ajoutée à la bibliothèque');
-                    return true;
-                }
-                showToast('ℹ️ Vidéo déjà dans la bibliothèque');
-                return false;
-            }
-
-            function removeFromLibrary(id) {
-                library = library.filter(item => item.id !== id);
+                if(library.some(i=>i.url===videoData.url)) { showToast('ℹ️ Déjà dans la bibliothèque'); return false; }
+                library.unshift({ ...videoData, savedAt: new Date().toISOString(), id: Date.now().toString() });
+                if(library.length>50) library=library.slice(0,50);
                 localStorage.setItem('videoLibrary', JSON.stringify(library));
                 renderLibrary();
-                showToast('🗑️ Vidéo supprimée');
+                showToast('✅ Ajouté à la bibliothèque');
+                return true;
             }
-
+            function removeFromLibrary(id) {
+                library = library.filter(i=>i.id!==id);
+                localStorage.setItem('videoLibrary', JSON.stringify(library));
+                renderLibrary();
+                showToast('🗑️ Supprimé');
+            }
             function renderLibrary() {
                 const container = document.getElementById('libraryList');
                 const emptyMsg = document.getElementById('emptyLibrary');
-                if (!container) return;
-                if (library.length === 0) {
-                    container.innerHTML = '';
-                    if (emptyMsg) {
-                        container.appendChild(emptyMsg);
-                        emptyMsg.classList.remove('hidden');
-                    }
-                    return;
-                }
-                if (emptyMsg) emptyMsg.classList.add('hidden');
+                if(!container) return;
+                if(library.length===0){ container.innerHTML=''; if(emptyMsg){ container.appendChild(emptyMsg); emptyMsg.classList.remove('hidden'); } return; }
+                if(emptyMsg) emptyMsg.classList.add('hidden');
                 container.innerHTML = library.map(item => `
                     <div class="library-card dark:bg-gray-800 light:bg-white rounded-xl border dark:border-gray-700 light:border-gray-300 overflow-hidden">
                         <div class="relative">
-                            ${item.thumbnail ? `<img src="${escapeHtml(item.thumbnail)}" alt="thumbnail" class="w-full h-40 object-cover cursor-pointer" onclick="window.playLibraryVideo('${item.id}')">` : `
-                                <div class="w-full h-40 bg-gray-700 flex items-center justify-center cursor-pointer" onclick="window.playLibraryVideo('${item.id}')">
-                                    <svg class="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
-                                    </svg>
-                                </div>
-                            `}
+                            ${item.thumbnail ? `<img src="${escapeHtml(item.thumbnail)}" class="w-full h-40 object-cover cursor-pointer" onclick="window.playLibraryVideo('${item.id}')">` : `<div class="w-full h-40 bg-gray-700 flex items-center justify-center cursor-pointer" onclick="window.playLibraryVideo('${item.id}')"><svg class="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/></svg></div>`}
                             <button onclick="window.removeFromLibrary('${item.id}')" class="absolute top-2 right-2 bg-red-600/80 hover:bg-red-700 rounded-full p-1 text-white text-xs">✕</button>
                         </div>
                         <div class="p-3">
-                            <p class="text-sm font-medium truncate">${escapeHtml(item.title || 'Sans titre')}</p>
-                            <p class="text-xs text-gray-500 mt-1">${item.quality ? escapeHtml(item.quality) : 'Qualité standard'} • ${new Date(item.savedAt).toLocaleDateString()}</p>
+                            <p class="text-sm font-medium truncate">${escapeHtml(item.title||'Sans titre')}</p>
+                            <p class="text-xs text-gray-500 mt-1">${item.quality||'Standard'} • ${new Date(item.savedAt).toLocaleDateString()}</p>
                             <div class="flex gap-2 mt-2">
                                 <button onclick="window.playLibraryVideo('${item.id}')" class="flex-1 bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs">▶️ Lire</button>
                                 <button onclick="window.showFormatModal('${item.url}')" class="flex-1 bg-green-600 hover:bg-green-700 px-2 py-1 rounded text-xs">📥</button>
@@ -1101,571 +874,321 @@ self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r
                     </div>
                 `).join('');
             }
-
             window.playLibraryVideo = function(id) {
-                const item = library.find(v => v.id === id);
-                if (!item) return;
-                const modal = document.getElementById('videoModal');
-                const video = document.getElementById('modalVideo');
-                if (!modal || !video) return;
-                modal.classList.remove('hidden');
-                video.src = item.url;
-                video.poster = item.thumbnail || '';
-                video.play().catch(() => {});
+                const item = library.find(v=>v.id===id);
+                if(!item) return;
+                const modal=document.getElementById('videoModal'); const video=document.getElementById('modalVideo');
+                if(modal && video){ modal.classList.remove('hidden'); video.src=item.url; video.poster=item.thumbnail||''; video.play().catch(()=>{}); }
             };
-
             window.removeFromLibrary = removeFromLibrary;
             window.showFormatModal = showFormatModal;
             window.showQRCodeForUrl = showQRCode;
-            
             window.sendLibraryToDiscord = function(id) {
-                const item = library.find(v => v.id === id);
-                if (!item) return;
-                const title = item.title || 'Vidéo X';
-                const author = item.author ? `@${item.author}` : '';
-                sendToDiscordDirect(item.url, title, author);
+                const item = library.find(v=>v.id===id);
+                if(item) sendToDiscordDirect(item.url, item.title||'Vidéo X', item.author?`@${item.author}`:'');
             };
-
-            const clearLibraryBtn = document.getElementById('clearLibraryBtn');
-            if (clearLibraryBtn) {
-                clearLibraryBtn.onclick = () => {
-                    if (confirm('Vider toute la bibliothèque ?')) {
-                        library = [];
-                        localStorage.removeItem('videoLibrary');
-                        renderLibrary();
-                        showToast('Bibliothèque vidée');
-                    }
-                };
-            }
-
-            const closeModalBtn = document.getElementById('closeModal');
-            if (closeModalBtn) {
-                closeModalBtn.onclick = () => {
-                    const modal = document.getElementById('videoModal');
-                    const video = document.getElementById('modalVideo');
-                    if (modal) modal.classList.add('hidden');
-                    if (video) { video.pause(); video.src = ''; }
-                };
-            }
+            const clearLib = document.getElementById('clearLibraryBtn');
+            if(clearLib) clearLib.onclick = ()=>{ if(confirm('Vider la bibliothèque ?')){ library=[]; localStorage.removeItem('videoLibrary'); renderLibrary(); showToast('Bibliothèque vidée'); } };
+            const closeModalVideo = document.getElementById('closeModal');
+            if(closeModalVideo) closeModalVideo.onclick = ()=>{ const m=document.getElementById('videoModal'); const v=document.getElementById('modalVideo'); if(m) m.classList.add('hidden'); if(v){ v.pause(); v.src=''; } };
 
             // ==================== HISTORIQUE ====================
             function saveHistory(url, title, thumbnail) {
-                const item = { url, title: title.substring(0, 50), thumbnail, date: new Date().toISOString() };
-                history = [item, ...history.filter(h => h.url !== url)].slice(0, 20);
+                history = [{ url, title: title.substring(0,50), thumbnail, date: new Date().toISOString() }, ...history.filter(h=>h.url!==url)].slice(0,20);
                 localStorage.setItem('videoHistory', JSON.stringify(history));
                 renderHistory();
             }
-
             function renderHistory() {
                 const container = document.getElementById('historyList');
                 const emptyMsg = document.getElementById('emptyHistory');
-                if (!container) return;
-                if (history.length === 0) {
-                    container.innerHTML = '';
-                    if (emptyMsg) emptyMsg.classList.remove('hidden');
-                    return;
-                }
-                if (emptyMsg) emptyMsg.classList.add('hidden');
+                if(!container) return;
+                if(history.length===0){ container.innerHTML=''; if(emptyMsg) emptyMsg.classList.remove('hidden'); return; }
+                if(emptyMsg) emptyMsg.classList.add('hidden');
                 container.innerHTML = history.map(item => `
                     <div class="flex items-center gap-3 p-3 dark:bg-gray-800 light:bg-white rounded-xl border dark:border-gray-700 light:border-gray-300 hover:bg-blue-600/10 transition cursor-pointer" onclick="document.getElementById('tweetUrl').value='${escapeHtml(item.url)}'; switchTab('download');">
                         ${item.thumbnail ? `<img src="${escapeHtml(item.thumbnail)}" class="w-12 h-12 rounded object-cover">` : '<div class="w-12 h-12 bg-gray-700 rounded flex items-center justify-center">🎬</div>'}
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm truncate">${escapeHtml(item.title)}</p>
-                            <p class="text-xs text-gray-500">${new Date(item.date).toLocaleString()}</p>
-                        </div>
+                        <div class="flex-1 min-w-0"><p class="text-sm truncate">${escapeHtml(item.title)}</p><p class="text-xs text-gray-500">${new Date(item.date).toLocaleString()}</p></div>
                         <span class="text-blue-400 text-sm">→</span>
                     </div>
                 `).join('');
             }
-
-            const clearHistoryBtn = document.getElementById('clearHistoryBtn');
-            if (clearHistoryBtn) {
-                clearHistoryBtn.onclick = () => {
-                    history = [];
-                    localStorage.removeItem('videoHistory');
-                    renderHistory();
-                    showToast('Historique effacé');
-                };
-            }
+            const clearHist = document.getElementById('clearHistoryBtn');
+            if(clearHist) clearHist.onclick = ()=>{ history=[]; localStorage.removeItem('videoHistory'); renderHistory(); showToast('Historique effacé'); };
 
             // ==================== TECH LOGS ====================
-            function addTechLog(apiName, url, status, data, error = null, duration = 0) {
-                const log = {
-                    id: Date.now().toString(),
-                    apiName, url, status,
-                    data: data,
-                    error: error ? error.message || String(error) : null,
-                    duration,
-                    timestamp: new Date().toISOString()
-                };
+            function addTechLog(apiName, url, status, data, error, duration) {
+                const log = { id: Date.now().toString(), apiName, url, status, data, error: error?.message||error, duration, timestamp: new Date().toISOString() };
                 techLogs.unshift(log);
-                if (techLogs.length > 50) techLogs = techLogs.slice(0, 50);
+                if(techLogs.length>50) techLogs=techLogs.slice(0,50);
                 sessionStorage.setItem('techLogs', JSON.stringify(techLogs));
                 renderTechLogs();
             }
-
-            function clearTechLogs() {
-                techLogs = [];
-                sessionStorage.removeItem('techLogs');
-                selectedTechLogId = null;
-                renderTechLogs();
-                const panel = document.getElementById('techDetailPanel');
-                if (panel) panel.classList.add('hidden');
-                showToast('Logs techniques effacés');
-            }
-
             function renderTechLogs() {
                 const container = document.getElementById('techLogsList');
                 const emptyMsg = document.getElementById('emptyTechLogs');
-                if (!container) return;
-                if (techLogs.length === 0) {
-                    container.innerHTML = '';
-                    if (emptyMsg) {
-                        container.appendChild(emptyMsg);
-                        emptyMsg.classList.remove('hidden');
-                    }
-                    return;
-                }
-                if (emptyMsg) emptyMsg.classList.add('hidden');
-                container.innerHTML = techLogs.map(log => {
-                    const statusClass = log.status === 'success' ? 'success' : log.status === 'error' ? 'error' : 'info';
-                    const statusIcon = log.status === 'success' ? '✅' : log.status === 'error' ? '❌' : '⏳';
-                    const variantCount = log.data?.variants?.length || 0;
+                if(!container) return;
+                const filter = document.getElementById('filterTechStatus')?.value || 'all';
+                let filtered = techLogs;
+                if(filter==='success') filtered = techLogs.filter(l=>l.status==='success');
+                else if(filter==='error') filtered = techLogs.filter(l=>l.status==='error');
+                if(filtered.length===0){ container.innerHTML=''; if(emptyMsg){ container.appendChild(emptyMsg); emptyMsg.classList.remove('hidden'); } return; }
+                if(emptyMsg) emptyMsg.classList.add('hidden');
+                container.innerHTML = filtered.map(log => {
+                    const statusClass = log.status==='success'?'success':log.status==='error'?'error':'info';
+                    const icon = log.status==='success'?'✅':log.status==='error'?'❌':'⏳';
+                    const variants = log.data?.variants?.length||0;
                     return `
-                        <div class="tech-entry p-3 dark:bg-gray-800/50 light:bg-gray-100 rounded-lg border dark:border-gray-700 light:border-gray-300 cursor-pointer ${selectedTechLogId === log.id ? 'ring-2 ring-blue-500' : ''}" onclick="window.selectTechLog('${log.id}')">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <span>${statusIcon}</span>
-                                    <div>
-                                        <div class="flex items-center gap-2">
-                                            <span class="font-semibold text-sm">${escapeHtml(log.apiName)}</span>
-                                            <span class="api-badge ${statusClass}">${log.status.toUpperCase()}</span>
-                                            ${variantCount > 0 ? `<span class="text-xs text-gray-500">${variantCount} variante(s)</span>` : ''}
-                                        </div>
-                                        <p class="text-xs text-gray-500 mt-0.5">${new Date(log.timestamp).toLocaleString()} • ${log.duration}ms</p>
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <button onclick="event.stopPropagation(); window.copyTechLogData('${log.id}')" class="copy-btn text-xs bg-gray-600 hover:bg-gray-500 px-2 py-1 rounded">📋</button>
-                                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                                    </svg>
-                                </div>
+                        <div class="tech-entry p-3 dark:bg-gray-800/50 light:bg-gray-100 rounded-lg border dark:border-gray-700 light:border-gray-300 cursor-pointer ${selectedTechLogId===log.id?'ring-2 ring-blue-500':''}" data-id="${log.id}">
+                            <div class="flex items-center justify-between flex-wrap gap-2">
+                                <div class="flex items-center gap-3"><span>${icon}</span><div><div class="flex items-center gap-2"><span class="font-semibold text-sm">${escapeHtml(log.apiName)}</span><span class="api-badge ${statusClass}">${log.status.toUpperCase()}</span>${variants?`<span class="text-xs text-gray-500">🎬 ${variants}</span>`:''}</div><p class="text-xs text-gray-500">${new Date(log.timestamp).toLocaleString()} • ${log.duration}ms</p></div></div>
+                                <div><button class="copy-single-log text-xs bg-gray-600 hover:bg-gray-500 px-2 py-1 rounded" data-id="${log.id}">📋 Copier</button></div>
                             </div>
                         </div>
                     `;
                 }).join('');
-                if (selectedTechLogId) {
-                    const log = techLogs.find(l => l.id === selectedTechLogId);
-                    if (log) showTechDetail(log);
-                }
+                document.querySelectorAll('.tech-entry').forEach(el => {
+                    const id = el.dataset.id;
+                    el.addEventListener('click', (e) => { if(e.target.classList.contains('copy-single-log')) return; selectTechLog(id); });
+                });
+                document.querySelectorAll('.copy-single-log').forEach(btn => {
+                    btn.addEventListener('click', (e) => { e.stopPropagation(); copyTechLogData(btn.dataset.id); });
+                });
             }
-
             function selectTechLog(id) {
                 selectedTechLogId = id;
-                const log = techLogs.find(l => l.id === id);
-                if (log) showTechDetail(log);
+                const log = techLogs.find(l=>l.id===id);
+                if(log) showTechDetail(log);
                 renderTechLogs();
             }
-
             function showTechDetail(log) {
                 const panel = document.getElementById('techDetailPanel');
-                if (!panel) return;
+                if(!panel) return;
                 panel.classList.remove('hidden');
-                const titleEl = document.getElementById('techDetailTitle');
-                if (titleEl) titleEl.textContent = `${log.apiName} - Réponse API`;
-                const contentEl = document.getElementById('techDetailContent');
-                if (contentEl) contentEl.textContent = JSON.stringify(log.data || log.error || {}, null, 2);
+                document.getElementById('techDetailTitle').textContent = `${log.apiName} - Réponse API`;
+                const badge = document.getElementById('techDetailBadge');
+                if(badge){ badge.textContent = log.status.toUpperCase(); badge.className = `api-badge ${log.status==='success'?'success':log.status==='error'?'error':'info'}`; }
+                const timeEl = document.getElementById('techDetailTime'); if(timeEl) timeEl.textContent = new Date(log.timestamp).toLocaleString();
+                const durEl = document.getElementById('techDetailDuration'); if(durEl) durEl.textContent = log.duration;
+                const urlEl = document.getElementById('techDetailUrl'); if(urlEl) urlEl.textContent = log.url||'—';
+                const content = log.data ? JSON.stringify(log.data, null, 2) : (log.error || 'Aucune donnée');
+                const contentEl = document.getElementById('techDetailContent'); if(contentEl) contentEl.textContent = content;
                 panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
-
             function copyTechLogData(id) {
-                const log = techLogs.find(l => l.id === id);
-                if (log && log.data) {
-                    copyToClipboard(JSON.stringify(log.data, null, 2));
-                    showToast('✅ Données API copiées');
-                }
+                const log = techLogs.find(l=>l.id===id);
+                if(log && log.data) { copyToClipboard(JSON.stringify(log.data, null, 2)); showToast('✅ Données API copiées'); }
             }
-
-            window.selectTechLog = selectTechLog;
-            window.copyTechLogData = copyTechLogData;
-
-            const refreshTech = document.getElementById('refreshTechBtn');
-            if (refreshTech) {
-                refreshTech.onclick = () => {
-                    techLogs = JSON.parse(sessionStorage.getItem('techLogs') || '[]');
-                    selectedTechLogId = null;
-                    const panel = document.getElementById('techDetailPanel');
-                    if (panel) panel.classList.add('hidden');
-                    renderTechLogs();
-                    showToast('Logs actualisés');
-                };
-            }
-
-            const clearTech = document.getElementById('clearTechBtn');
-            if (clearTech) clearTech.onclick = () => clearTechLogs();
-
-            const closeTechDetail = document.getElementById('closeTechDetail');
-            if (closeTechDetail) {
-                closeTechDetail.onclick = () => {
-                    const panel = document.getElementById('techDetailPanel');
-                    if (panel) panel.classList.add('hidden');
-                    selectedTechLogId = null;
-                    renderTechLogs();
-                };
-            }
-
-            const copyTechDetail = document.getElementById('copyTechDetail');
-            if (copyTechDetail) {
-                copyTechDetail.onclick = () => {
-                    const content = document.getElementById('techDetailContent');
-                    if (content) copyToClipboard(content.textContent);
-                    showToast('✅ Détail API copié');
-                };
-            }
+            const filterSelect = document.getElementById('filterTechStatus');
+            if(filterSelect) filterSelect.addEventListener('change',()=>renderTechLogs());
+            const exportBtn = document.getElementById('exportTechLogsBtn');
+            if(exportBtn) exportBtn.onclick = ()=>{
+                const dataStr = JSON.stringify(techLogs, null, 2);
+                const blob = new Blob([dataStr], {type:'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = `x_video_logs_${new Date().toISOString().slice(0,19)}.json`;
+                a.click(); URL.revokeObjectURL(url);
+                showToast('📁 Export JSON');
+            };
+            const clearTechBtn = document.getElementById('clearTechBtn');
+            if(clearTechBtn) clearTechBtn.onclick = ()=>{ techLogs=[]; sessionStorage.removeItem('techLogs'); selectedTechLogId=null; renderTechLogs(); const panel=document.getElementById('techDetailPanel'); if(panel) panel.classList.add('hidden'); showToast('Logs effacés'); };
+            const closeTechDetail = document.getElementById('closeTechDetailBtn');
+            if(closeTechDetail) closeTechDetail.onclick = ()=>{ const panel=document.getElementById('techDetailPanel'); if(panel) panel.classList.add('hidden'); selectedTechLogId=null; renderTechLogs(); };
+            const copyTechDetailBtn = document.getElementById('copyTechDetailBtn');
+            if(copyTechDetailBtn) copyTechDetailBtn.onclick = ()=>{ const content=document.getElementById('techDetailContent'); if(content) copyToClipboard(content.textContent); showToast('✅ Détail copié'); };
 
             // ==================== APIs ====================
-            async function fetchWithTimeout(url, opts = {}, timeout = 10000) {
+            async function fetchWithTimeout(url, opts={}, timeout=10000) {
                 const ctrl = new AbortController();
-                const id = setTimeout(() => ctrl.abort(), timeout);
-                try {
-                    const res = await fetch(url, { ...opts, signal: ctrl.signal });
-                    clearTimeout(id);
-                    return res;
-                } catch(e) {
-                    clearTimeout(id);
-                    throw e;
-                }
+                const id = setTimeout(()=>ctrl.abort(), timeout);
+                try { const res = await fetch(url, {...opts, signal: ctrl.signal}); clearTimeout(id); return res; }
+                catch(e){ clearTimeout(id); throw e; }
             }
-
             async function fetchVxTwitter(tweetUrl) {
-                const startTime = Date.now();
-                const cleanUrl = tweetUrl.split('?')[0];
-                const path = new URL(cleanUrl).pathname;
+                const start = Date.now();
+                const clean = tweetUrl.split('?')[0];
+                const path = new URL(clean).pathname;
                 const apiUrl = `https://api.vxtwitter.com${path}`;
                 try {
                     const resp = await fetchWithTimeout(apiUrl);
-                    if (!resp.ok) throw new Error(`vxTwitter ${resp.status}`);
+                    if(!resp.ok) throw new Error(`vxTwitter ${resp.status}`);
                     const data = await resp.json();
-                    let variants = [], thumbnail = null, author = null, authorName = null, text = null, likes = null, retweets = null;
-                    if (data.media_extended) {
-                        for (let media of data.media_extended) {
-                            if (media.type === 'video') {
-                                if (media.url) variants.push({ bitrate: media.bitrate || 0, url: media.url });
-                                if (media.videoVariants) {
-                                    for (let v of media.videoVariants) {
-                                        if (v.content_type === 'video/mp4') variants.push({ bitrate: v.bitrate || 0, url: v.url });
-                                    }
-                                }
-                                if (media.thumbnail_url) thumbnail = media.thumbnail_url;
+                    let variants=[], thumbnail=null, author=null, authorName=null, text=null, likes=null, retweets=null;
+                    if(data.media_extended){
+                        for(let m of data.media_extended){
+                            if(m.type==='video'){
+                                if(m.url) variants.push({bitrate:m.bitrate||0, url:m.url});
+                                if(m.videoVariants) for(let v of m.videoVariants) if(v.content_type==='video/mp4') variants.push({bitrate:v.bitrate||0, url:v.url});
+                                if(m.thumbnail_url) thumbnail=m.thumbnail_url;
                             }
                         }
                     }
-                    if (!variants.length && data.mediaURLs) variants = data.mediaURLs.map(url => ({ bitrate: 0, url }));
-                    author = data.user_screen_name;
-                    authorName = data.user_name;
-                    text = data.text;
-                    likes = data.likes;
-                    retweets = data.retweets;
-                    variants.sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
-                    const result = { variants, thumbnail, author, authorName, text, likes, retweets };
-                    addTechLog('vxTwitter', apiUrl, 'success', result, null, Date.now() - startTime);
+                    if(!variants.length && data.mediaURLs) variants = data.mediaURLs.map(u=>({bitrate:0,url:u}));
+                    author = data.user_screen_name; authorName = data.user_name; text = data.text; likes = data.likes; retweets = data.retweets;
+                    variants.sort((a,b)=>(b.bitrate||0)-(a.bitrate||0));
+                    const result = {variants,thumbnail,author,authorName,text,likes,retweets};
+                    addTechLog('vxTwitter', apiUrl, 'success', result, null, Date.now()-start);
                     return result;
-                } catch(e) {
-                    addTechLog('vxTwitter', apiUrl, 'error', null, e, Date.now() - startTime);
-                    throw e;
-                }
+                } catch(e){ addTechLog('vxTwitter', apiUrl, 'error', null, e, Date.now()-start); throw e; }
             }
-
             async function fetchFxTwitter(tweetUrl) {
-                const startTime = Date.now();
-                const cleanUrl = tweetUrl.split('?')[0];
-                const path = new URL(cleanUrl).pathname;
+                const start = Date.now();
+                const clean = tweetUrl.split('?')[0];
+                const path = new URL(clean).pathname;
                 const apiUrl = `https://api.fxtwitter.com${path}`;
                 try {
                     const resp = await fetchWithTimeout(apiUrl);
-                    if (!resp.ok) throw new Error(`fxTwitter ${resp.status}`);
+                    if(!resp.ok) throw new Error(`fxTwitter ${resp.status}`);
                     const data = await resp.json();
-                    let variants = [], thumbnail = null, author = null, authorName = null, text = null, likes = null, retweets = null;
+                    let variants=[], thumbnail=null, author=null, authorName=null, text=null, likes=null, retweets=null;
                     const tweet = data.tweet;
-                    if (tweet?.media?.all) {
-                        for (let media of tweet.media.all) {
-                            if (media.type === 'video' && media.variants) {
-                                for (let v of media.variants) {
-                                    if (v.content_type === 'video/mp4') variants.push({ bitrate: v.bitrate || 0, url: v.url });
-                                }
-                                thumbnail = media.thumbnail_url || thumbnail;
+                    if(tweet?.media?.all){
+                        for(let m of tweet.media.all){
+                            if(m.type==='video' && m.variants){
+                                for(let v of m.variants) if(v.content_type==='video/mp4') variants.push({bitrate:v.bitrate||0, url:v.url});
+                                thumbnail = m.thumbnail_url || thumbnail;
                             }
                         }
                     }
-                    author = tweet?.author?.screen_name;
-                    authorName = tweet?.author?.name;
-                    text = tweet?.text;
-                    likes = tweet?.likes;
-                    retweets = tweet?.retweets;
-                    variants.sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
-                    const result = { variants, thumbnail, author, authorName, text, likes, retweets };
-                    addTechLog('fxTwitter', apiUrl, 'success', result, null, Date.now() - startTime);
+                    author = tweet?.author?.screen_name; authorName = tweet?.author?.name; text = tweet?.text; likes = tweet?.likes; retweets = tweet?.retweets;
+                    variants.sort((a,b)=>(b.bitrate||0)-(a.bitrate||0));
+                    const result = {variants,thumbnail,author,authorName,text,likes,retweets};
+                    addTechLog('fxTwitter', apiUrl, 'success', result, null, Date.now()-start);
                     return result;
-                } catch(e) {
-                    addTechLog('fxTwitter', apiUrl, 'error', null, e, Date.now() - startTime);
-                    throw e;
-                }
+                } catch(e){ addTechLog('fxTwitter', apiUrl, 'error', null, e, Date.now()-start); throw e; }
             }
-
             async function fetchTwitsave(tweetUrl) {
-                const startTime = Date.now();
+                const start = Date.now();
                 const apiUrl = `https://twitsave.app/api/get?url=${encodeURIComponent(tweetUrl)}`;
                 try {
                     const resp = await fetchWithTimeout(apiUrl);
-                    if (!resp.ok) throw new Error(`twitsave ${resp.status}`);
+                    if(!resp.ok) throw new Error(`twitsave ${resp.status}`);
                     const json = await resp.json();
-                    if (!json.success || !json.data?.video) throw new Error("No video");
-                    const variants = json.data.video.map(v => ({ bitrate: v.quality === 'HD' ? 2000000 : 800000, url: v.url }));
-                    const result = { variants, thumbnail: json.data.thumbnail, author: null, authorName: null, text: null, likes: null, retweets: null };
-                    addTechLog('twitsave', apiUrl, 'success', result, null, Date.now() - startTime);
+                    if(!json.success || !json.data?.video) throw new Error("No video");
+                    const variants = json.data.video.map(v=>({bitrate: v.quality==='HD'?2000000:800000, url: v.url}));
+                    const result = {variants, thumbnail: json.data.thumbnail, author:null, authorName:null, text:null, likes:null, retweets:null};
+                    addTechLog('twitsave', apiUrl, 'success', result, null, Date.now()-start);
                     return result;
-                } catch(e) {
-                    addTechLog('twitsave', apiUrl, 'error', null, e, Date.now() - startTime);
-                    throw e;
-                }
+                } catch(e){ addTechLog('twitsave', apiUrl, 'error', null, e, Date.now()-start); throw e; }
             }
 
-            // ==================== AFFICHAGE RÉSULTATS ====================
+            // ==================== ANALYSE ET AFFICHAGE ====================
             function hideAll() {
-                safeClassList('initialMessage', 'add', 'hidden');
-                safeClassList('loadingState', 'add', 'hidden');
-                safeClassList('resultContainer', 'add', 'hidden');
-                safeClassList('errorContainer', 'add', 'hidden');
+                safeClassList('initialMessage','add','hidden');
+                safeClassList('loadingState','add','hidden');
+                safeClassList('resultContainer','add','hidden');
+                safeClassList('errorContainer','add','hidden');
             }
-
-            function showLoading() {
+            function showLoading() { hideAll(); safeClassList('loadingState','remove','hidden'); }
+            function showError(msg, details=null) {
                 hideAll();
-                safeClassList('loadingState', 'remove', 'hidden');
-            }
-
-            function showError(message, details = null) {
-                hideAll();
-                const errorDiv = document.getElementById('errorContainer');
-                if (errorDiv) {
-                    errorDiv.classList.remove('hidden');
-                    errorDiv.innerHTML = `
-                        <div class="flex items-start gap-2">
-                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                            </svg>
-                            <div>
-                                <p class="font-semibold">${escapeHtml(message)}</p>
-                                ${details ? `<p class="text-sm mt-1">${escapeHtml(details)}</p>` : ''}
-                            </div>
-                        </div>`;
+                const errDiv = document.getElementById('errorContainer');
+                if(errDiv){
+                    errDiv.classList.remove('hidden');
+                    errDiv.innerHTML = `<div class="flex items-start gap-2"><svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg><div><p class="font-semibold">${escapeHtml(msg)}</p>${details?`<p class="text-sm mt-1">${escapeHtml(details)}</p>`:''}</div></div>`;
                 }
             }
-
             function resetAnalysis() {
-                currentVariants = [];
-                currentVideoData = null;
-                pendingDownloadUrl = null;
-                const resultContainer = document.getElementById('resultContainer');
-                if (resultContainer) {
-                    resultContainer.innerHTML = '';
-                    resultContainer.classList.add('hidden');
-                }
-                const errorContainer = document.getElementById('errorContainer');
-                if (errorContainer) {
-                    errorContainer.innerHTML = '';
-                    errorContainer.classList.add('hidden');
-                }
+                currentVariants = []; currentVideoData = null; pendingDownloadUrl = null;
+                const resCont = document.getElementById('resultContainer'); if(resCont){ resCont.innerHTML = ''; resCont.classList.add('hidden'); }
+                const errCont = document.getElementById('errorContainer'); if(errCont){ errCont.innerHTML = ''; errCont.classList.add('hidden'); }
             }
-
             async function analyzeTweet() {
                 resetAnalysis();
                 const urlInput = document.getElementById('tweetUrl');
-                if (!urlInput) return;
+                if(!urlInput) return;
                 const rawUrl = urlInput.value.trim();
-                if (!rawUrl) { showError("Veuillez entrer une URL."); return; }
-                if (!rawUrl.includes('/status/')) { showError("URL invalide - doit contenir /status/"); return; }
+                if(!rawUrl) { showError("Veuillez entrer une URL."); return; }
+                if(!rawUrl.includes('/status/')) { showError("URL invalide", "doit contenir /status/"); return; }
                 showLoading();
-                await new Promise(r => setTimeout(r, 200));
+                await new Promise(r=>setTimeout(r,200));
                 let lastError = null;
-                for (const svc of [
-                    { name: 'vxTwitter', fn: fetchVxTwitter },
-                    { name: 'fxTwitter', fn: fetchFxTwitter },
-                    { name: 'twitsave', fn: fetchTwitsave }
-                ]) {
+                for(const svc of [
+                    { name:'vxTwitter', fn:fetchVxTwitter },
+                    { name:'fxTwitter', fn:fetchFxTwitter },
+                    { name:'twitsave', fn:fetchTwitsave }
+                ]){
                     try {
                         const result = await svc.fn(rawUrl);
-                        if (result.variants && result.variants.length > 0) {
-                            displayResult({ ...result, rawUrl });
+                        if(result.variants && result.variants.length){
+                            displayResult({...result, rawUrl});
                             return;
-                        } else {
-                            lastError = `Aucune variante vidéo trouvée via ${svc.name}`;
-                        }
-                    } catch(e) {
-                        console.warn(svc.name, e);
-                        lastError = e.message;
-                    }
+                        } else lastError = `Aucune variante via ${svc.name}`;
+                    } catch(e){ lastError = e.message; }
                 }
                 showError("Aucune vidéo trouvée", lastError || "Essayez un autre tweet public avec vidéo.");
             }
-
-            function displayResult({ variants, thumbnail, author, authorName, text, likes, retweets, rawUrl }) {
+            function displayResult({variants, thumbnail, author, authorName, text, likes, retweets, rawUrl}) {
                 hideAll();
                 const container = document.getElementById('resultContainer');
-                if (!container) return;
+                if(!container) return;
                 container.classList.remove('hidden');
                 currentVariants = variants;
                 const best = variants[0];
-                const title = text ? (text.substring(0, 80) + (text.length > 80 ? '...' : '')) : 'Vidéo X';
+                const title = text ? (text.substring(0,80)+(text.length>80?'...':'')) : 'Vidéo X';
                 saveHistory(rawUrl, title, thumbnail);
-                currentVideoData = {
-                    url: best.url,
-                    thumbnail: thumbnail,
-                    title: title,
-                    quality: best.bitrate >= 1000000 ? 'HD' : 'Standard',
-                    author: author,
-                    authorName: authorName
-                };
-                let qualitiesHtml = variants.map((v, i) => {
-                    const isBest = i === 0;
-                    const label = v.bitrate ? (v.bitrate >= 1000000 ? `HD ${(v.bitrate/1000000).toFixed(1)} Mbps` : `${(v.bitrate/1000).toFixed(0)} kbps`) : 'Qualité';
-                    return `
-                        <div class="quality-card dark:bg-gray-800/60 light:bg-gray-100 rounded-xl p-3 border ${isBest ? 'border-blue-500/50' : 'dark:border-gray-700 light:border-gray-300'}">
-                            <div class="flex items-center justify-between flex-wrap gap-2">
-                                <div class="flex items-center gap-2">
-                                    <span>${isBest ? '⭐' : '🎬'}</span>
-                                    <span class="font-semibold">${label}</span>
-                                    ${isBest ? '<span class="text-xs bg-blue-600/50 px-2 py-0.5 rounded-full">Meilleure</span>' : ''}
-                                </div>
-                                <div class="flex gap-2">
-                                    <button data-url="${escapeHtml(v.url)}" class="download-btn bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-3 py-1.5 rounded-lg text-sm font-semibold transition">📥</button>
-                                    <button data-url="${escapeHtml(v.url)}" data-title="${escapeHtml(title)}" class="share-btn bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded-lg text-sm transition">🔗</button>
-                                    <button data-url="${escapeHtml(v.url)}" data-quality="${label}" class="save-library bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-lg text-sm transition">📚</button>
-                                    <button data-url="${escapeHtml(v.url)}" class="discord-send-btn discord-btn px-3 py-1.5 rounded-lg text-sm transition font-semibold">💬</button>
-                                    <button data-url="${escapeHtml(v.url)}" class="qr-btn bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-lg text-sm transition">📱 QR</button>
-                                </div>
+                currentVideoData = { url: best.url, thumbnail, title, quality: best.bitrate>=1000000?'HD':'Standard', author, authorName };
+                const qualitiesHtml = variants.map((v,i) => {
+                    const isBest = i===0;
+                    const label = v.bitrate ? (v.bitrate>=1000000 ? `HD ${(v.bitrate/1000000).toFixed(1)} Mbps` : `${(v.bitrate/1000).toFixed(0)} kbps`) : 'Qualité';
+                    return `<div class="quality-card dark:bg-gray-800/60 light:bg-gray-100 rounded-xl p-3 border ${isBest?'border-blue-500/50':'dark:border-gray-700 light:border-gray-300'}">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <div class="flex items-center gap-2"><span>${isBest?'⭐':'🎬'}</span><span class="font-semibold">${label}</span>${isBest?'<span class="text-xs bg-blue-600/50 px-2 py-0.5 rounded-full">Meilleure</span>':''}</div>
+                            <div class="flex gap-2">
+                                <button data-url="${escapeHtml(v.url)}" class="download-btn bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-3 py-1.5 rounded-lg text-sm font-semibold">📥</button>
+                                <button data-url="${escapeHtml(v.url)}" data-title="${escapeHtml(title)}" class="share-btn bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded-lg text-sm">🔗</button>
+                                <button data-url="${escapeHtml(v.url)}" data-quality="${label}" class="save-library bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-lg text-sm">📚</button>
+                                <button data-url="${escapeHtml(v.url)}" class="discord-send-btn discord-btn px-3 py-1.5 rounded-lg text-sm">💬</button>
+                                <button data-url="${escapeHtml(v.url)}" class="qr-btn bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-lg text-sm">📱 QR</button>
                             </div>
                         </div>
-                    `;
+                    </div>`;
                 }).join('');
                 container.innerHTML = `
                     <div class="space-y-4">
                         <div class="dark:bg-gradient-to-r from-blue-950/40 to-purple-950/40 light:bg-gradient-to-r light:from-blue-100 light:to-purple-100 rounded-xl p-4">
                             <div class="flex justify-between items-start">
-                                <div>
-                                    <h2 class="text-xl font-bold">${escapeHtml(title)}</h2>
-                                    ${author ? `<p class="text-sm text-gray-400">@${escapeHtml(author)}${authorName ? ` (${escapeHtml(authorName)})` : ''}</p>` : ''}
-                                    ${likes ? `<p class="text-xs">❤️ ${likes.toLocaleString()} likes 🔁 ${retweets?.toLocaleString() || 0} retweets</p>` : ''}
-                                </div>
-                                <div class="flex gap-2">
-                                    <button id="saveToLibraryBtn" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm font-semibold transition">📚</button>
-                                    <button id="discordMainBtn" class="discord-btn px-4 py-2 rounded-lg text-sm font-semibold transition">💬 Discord</button>
-                                    <button id="miniPlayerBtn" class="bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded-lg text-sm font-semibold transition">📺 Mini</button>
-                                    <button id="qrMainBtn" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg text-sm font-semibold transition">📱 QR</button>
-                                </div>
+                                <div><h2 class="text-xl font-bold">${escapeHtml(title)}</h2>${author?`<p class="text-sm text-gray-400">@${escapeHtml(author)}${authorName?` (${escapeHtml(authorName)})`:''}</p>`:''}${likes?`<p class="text-xs">❤️ ${likes.toLocaleString()} 🔁 ${retweets?.toLocaleString()||0}</p>`:''}</div>
+                                <div class="flex gap-2"><button id="saveToLibraryBtn" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm font-semibold">📚</button><button id="discordMainBtn" class="discord-btn px-4 py-2 rounded-lg text-sm font-semibold">💬 Discord</button><button id="miniPlayerBtn" class="bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded-lg text-sm font-semibold">📺 Mini</button><button id="qrMainBtn" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg text-sm font-semibold">📱 QR</button></div>
                             </div>
                         </div>
                         <div class="dark:bg-gray-800/40 light:bg-gray-200/40 rounded-xl p-4">
                             <h3 class="font-semibold mb-2">🎬 Aperçu vidéo</h3>
-                            <video id="previewVideo" controls class="w-full max-h-96 rounded-lg shadow-lg" poster="${thumbnail ? escapeHtml(thumbnail) : ''}">
-                                <source src="${escapeHtml(best.url)}" type="video/mp4">
-                                Votre navigateur ne supporte pas la vidéo.
-                            </video>
-                            <div class="flex gap-2 mt-3">
-                                <button id="fullscreenBtn" class="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded-lg text-sm">⛶ Plein écran</button>
-                                <button id="downloadCurrentBtn" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-3 py-1.5 rounded-lg text-sm">📥 Télécharger</button>
-                                <button id="shareCurrentBtn" class="bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded-lg text-sm">🔗 Partager</button>
-                                <button id="discordCurrentBtn" class="discord-btn px-3 py-1.5 rounded-lg text-sm font-semibold">💬 Discord</button>
-                                <button id="qrCurrentBtn" class="bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-lg text-sm">📱 QR</button>
-                            </div>
+                            <video id="previewVideo" controls class="w-full max-h-96 rounded-lg shadow-lg" poster="${thumbnail?escapeHtml(thumbnail):''}"><source src="${escapeHtml(best.url)}" type="video/mp4"></video>
+                            <div class="flex gap-2 mt-3"><button id="fullscreenBtn" class="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded-lg text-sm">⛶ Plein écran</button><button id="downloadCurrentBtn" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-3 py-1.5 rounded-lg text-sm">📥 Télécharger</button><button id="shareCurrentBtn" class="bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded-lg text-sm">🔗 Partager</button><button id="discordCurrentBtn" class="discord-btn px-3 py-1.5 rounded-lg text-sm">💬 Discord</button><button id="qrCurrentBtn" class="bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-lg text-sm">📱 QR</button></div>
                         </div>
-                        <div class="dark:bg-gray-900/60 light:bg-gray-200/60 rounded-xl p-4">
-                            <h3 class="font-semibold mb-3">📥 Qualités disponibles</h3>
-                            <div class="space-y-2">${qualitiesHtml}</div>
-                        </div>
-                        ${text ? `<div class="dark:bg-gray-800/30 light:bg-gray-200/30 rounded-xl p-4"><p class="text-sm italic">"${escapeHtml(text)}"</p></div>` : ''}
-                        <div class="text-center mt-4">
-                            <button onclick="switchTab('tech')" class="text-blue-400 hover:text-blue-300 text-sm underline">🔧 Voir les réponses techniques</button>
-                        </div>
+                        <div class="dark:bg-gray-900/60 light:bg-gray-200/60 rounded-xl p-4"><h3 class="font-semibold mb-3">📥 Qualités disponibles</h3><div class="space-y-2">${qualitiesHtml}</div></div>
+                        ${text?`<div class="dark:bg-gray-800/30 light:bg-gray-200/30 rounded-xl p-4"><p class="text-sm italic">"${escapeHtml(text)}"</p></div>`:''}
+                        <div class="text-center mt-4"><button onclick="switchTab('tech')" class="text-blue-400 hover:text-blue-300 text-sm underline">🔧 Voir les réponses techniques</button></div>
                     </div>
                 `;
-                // Attacher les événements après construction
-                const saveLibBtn = document.getElementById('saveToLibraryBtn');
-                if (saveLibBtn) saveLibBtn.onclick = () => { if (currentVideoData) { saveToLibrary(currentVideoData); renderLibrary(); } };
-                const discordMain = document.getElementById('discordMainBtn');
-                if (discordMain) discordMain.onclick = () => { if (currentVideoData) sendToDiscordDirect(currentVideoData.url, currentVideoData.title, currentVideoData.author ? `@${currentVideoData.author}` : ''); };
-                const miniBtn = document.getElementById('miniPlayerBtn');
-                if (miniBtn) miniBtn.onclick = () => { if (currentVideoData) showMiniPlayer(currentVideoData.url, currentVideoData.title); };
-                const qrMain = document.getElementById('qrMainBtn');
-                if (qrMain) qrMain.onclick = () => { if (currentVideoData) showQRCode(currentVideoData.url); };
-                const qrCurrent = document.getElementById('qrCurrentBtn');
-                if (qrCurrent) {
-                    qrCurrent.onclick = () => {
-                        const video = document.getElementById('previewVideo');
-                        const src = video ? (video.querySelector('source')?.src || video.src) : null;
-                        if (src) showQRCode(src);
-                    };
-                }
+                // Attacher événements
+                document.getElementById('saveToLibraryBtn')?.addEventListener('click',()=>{ if(currentVideoData) saveToLibrary(currentVideoData); });
+                document.getElementById('discordMainBtn')?.addEventListener('click',()=>{ if(currentVideoData) sendToDiscordDirect(currentVideoData.url, currentVideoData.title, currentVideoData.author?`@${currentVideoData.author}`:''); });
+                document.getElementById('miniPlayerBtn')?.addEventListener('click',()=>{ if(currentVideoData) showMiniPlayer(currentVideoData.url, currentVideoData.title); });
+                document.getElementById('qrMainBtn')?.addEventListener('click',()=>{ if(currentVideoData) showQRCode(currentVideoData.url); });
+                document.getElementById('qrCurrentBtn')?.addEventListener('click',()=>{ const v=document.getElementById('previewVideo'); const src=v?.querySelector('source')?.src||v?.src; if(src) showQRCode(src); });
                 const shareCurrent = document.getElementById('shareCurrentBtn');
-                if (shareCurrent) {
-                    const shareDropdown = createShareButton(best.url, title);
-                    shareCurrent.parentNode.replaceChild(shareDropdown, shareCurrent);
-                }
+                if(shareCurrent) shareCurrent.parentNode.replaceChild(createShareButton(best.url, title), shareCurrent);
                 document.querySelectorAll('.share-btn').forEach(btn => {
-                    const dropdown = createShareButton(btn.dataset.url, btn.dataset.title);
-                    btn.parentNode.replaceChild(dropdown, btn);
+                    btn.parentNode.replaceChild(createShareButton(btn.dataset.url, btn.dataset.title), btn);
                 });
-                const discordCurrent = document.getElementById('discordCurrentBtn');
-                if (discordCurrent) {
-                    discordCurrent.onclick = () => {
-                        const video = document.getElementById('previewVideo');
-                        const src = video ? (video.querySelector('source')?.src || video.src) : null;
-                        if (src) sendToDiscordDirect(src, title, author ? `@${author}` : '');
-                    };
-                }
-                document.querySelectorAll('.discord-send-btn').forEach(btn => {
-                    btn.onclick = () => { sendToDiscordDirect(btn.dataset.url, title, author ? `@${author}` : ''); };
-                });
-                document.querySelectorAll('.download-btn').forEach(btn => {
-                    btn.onclick = () => showFormatModal(btn.dataset.url);
-                });
-                const downloadCurrent = document.getElementById('downloadCurrentBtn');
-                if (downloadCurrent) {
-                    downloadCurrent.onclick = () => {
-                        const video = document.getElementById('previewVideo');
-                        const src = video ? (video.querySelector('source')?.src || video.src) : null;
-                        if (src) showFormatModal(src);
-                    };
-                }
-                document.querySelectorAll('.save-library').forEach(btn => {
-                    btn.onclick = () => {
-                        saveToLibrary({
-                            url: btn.dataset.url, thumbnail, title,
-                            quality: btn.dataset.quality, author, authorName
-                        });
-                        renderLibrary();
-                    };
-                });
-                document.querySelectorAll('.qr-btn').forEach(btn => btn.onclick = () => showQRCode(btn.dataset.url));
-                const fullscreenBtn = document.getElementById('fullscreenBtn');
-                if (fullscreenBtn) {
-                    fullscreenBtn.onclick = () => {
-                        const video = document.getElementById('previewVideo');
-                        if (video && video.requestFullscreen) video.requestFullscreen();
-                    };
-                }
+                document.getElementById('discordCurrentBtn')?.addEventListener('click',()=>{ const v=document.getElementById('previewVideo'); const src=v?.querySelector('source')?.src||v?.src; if(src) sendToDiscordDirect(src, title, author?`@${author}`:''); });
+                document.querySelectorAll('.discord-send-btn').forEach(btn=>{ btn.addEventListener('click',()=>{ sendToDiscordDirect(btn.dataset.url, title, author?`@${author}`:''); }); });
+                document.querySelectorAll('.download-btn').forEach(btn=>{ btn.addEventListener('click',()=>showFormatModal(btn.dataset.url)); });
+                document.getElementById('downloadCurrentBtn')?.addEventListener('click',()=>{ const v=document.getElementById('previewVideo'); const src=v?.querySelector('source')?.src||v?.src; if(src) showFormatModal(src); });
+                document.querySelectorAll('.save-library').forEach(btn=>{ btn.addEventListener('click',()=>{ saveToLibrary({ url:btn.dataset.url, thumbnail, title, quality:btn.dataset.quality, author, authorName }); }); });
+                document.querySelectorAll('.qr-btn').forEach(btn=>{ btn.addEventListener('click',()=>showQRCode(btn.dataset.url)); });
+                document.getElementById('fullscreenBtn')?.addEventListener('click',()=>{ const v=document.getElementById('previewVideo'); if(v?.requestFullscreen) v.requestFullscreen(); });
             }
-
             const analyzeBtn = document.getElementById('analyzeBtn');
-            if (analyzeBtn) analyzeBtn.onclick = analyzeTweet;
-            const urlInput = document.getElementById('tweetUrl');
-            if (urlInput) urlInput.onkeypress = e => { if (e.key === 'Enter') analyzeTweet(); };
-            
-            // Initial render
-            renderHistory();
-            renderLibrary();
-            renderTechLogs();
+            if(analyzeBtn) analyzeBtn.onclick = analyzeTweet;
+            const tweetInput = document.getElementById('tweetUrl');
+            if(tweetInput) tweetInput.onkeypress = e => { if(e.key==='Enter') analyzeTweet(); };
+            // Initial renders
+            renderHistory(); renderLibrary(); renderTechLogs();
         })();
     </script>
 </body>
+</html>
 </html>
