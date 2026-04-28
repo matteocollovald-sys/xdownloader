@@ -703,6 +703,29 @@
                 const errCont = document.getElementById('errorContainer'); if (errCont) { errCont.innerHTML = ''; errCont.classList.add('hidden'); }
             }
 
+            // ========== FONCTION POUR CHARGER LA VIDÉO EN BLOB (CONTOURNE CORS) ==========
+            async function loadVideoAsBlob(videoUrl, videoElement) {
+                if (!videoElement) return;
+                try {
+                    showToast("Chargement de la vidéo...");
+                    const response = await fetch(videoUrl);
+                    if (!response.ok) throw new Error("Impossible de charger la vidéo");
+                    const blob = await response.blob();
+                    const blobUrl = URL.createObjectURL(blob);
+                    videoElement.src = blobUrl;
+                    videoElement.load();
+                    // Nettoyer l'URL après chargement
+                    videoElement.onloadeddata = () => URL.revokeObjectURL(blobUrl);
+                    showToast("✅ Vidéo prête");
+                } catch(e) {
+                    console.error("Erreur chargement vidéo:", e);
+                    showToast("❌ Chargement direct, essayez de rafraîchir");
+                    // Fallback : lien direct
+                    videoElement.src = videoUrl;
+                    videoElement.load();
+                }
+            }
+
             async function analyzeTweet() {
                 resetAnalysis();
                 const urlInput = document.getElementById('tweetUrl');
@@ -749,6 +772,9 @@
                     return `<div class="quality-card dark:bg-gray-800/60 light:bg-gray-100 rounded-xl p-3 border ${isBest ? 'border-blue-500/50' : 'dark:border-gray-700 light:border-gray-300'}"><div class="flex items-center justify-between flex-wrap gap-2"><div class="flex items-center gap-2"><span>${isBest ? '⭐' : '🎬'}</span><span class="font-semibold">${escapeHtml(label)}</span>${isBest ? '<span class="text-xs bg-blue-600/50 px-2 py-0.5 rounded-full">Meilleure</span>' : ''}</div><div class="flex gap-2"><button data-url="${escapeHtml(v.url)}" class="download-btn bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-3 py-1.5 rounded-lg text-sm font-semibold">📥</button><button data-url="${escapeHtml(v.url)}" data-title="${title}" class="share-btn bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded-lg text-sm">🔗</button><button data-url="${escapeHtml(v.url)}" data-quality="${escapeHtml(label)}" class="save-library bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-lg text-sm">📚</button><button data-url="${escapeHtml(v.url)}" class="discord-send-btn discord-btn px-3 py-1.5 rounded-lg text-sm">💬</button><button data-url="${escapeHtml(v.url)}" class="qr-btn bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-lg text-sm">📱 QR</button><button data-url="${escapeHtml(v.url)}" data-title="${title}" data-quality="${escapeHtml(label)}" class="queue-add-btn bg-amber-600 hover:bg-amber-700 px-3 py-1.5 rounded-lg text-sm">📦 File</button></div></div></div>`;
                 }).join('');
 
+                // Générer un ID unique pour la vidéo
+                const videoId = 'previewVideo_' + Date.now();
+                
                 container.innerHTML = `
                     <div class="space-y-4">
                         <div class="dark:bg-gradient-to-r from-blue-950/40 to-purple-950/40 light:bg-gradient-to-r light:from-blue-100 light:to-purple-100 rounded-xl p-4">
@@ -759,9 +785,7 @@
                         </div>
                         <div class="dark:bg-gray-800/40 light:bg-gray-200/40 rounded-xl p-4">
                             <h3 class="font-semibold mb-2">🎬 Aperçu vidéo</h3>
-                            <video id="previewVideo" controls crossorigin="anonymous" referrerpolicy="no-referrer" class="w-full max-h-96 rounded-lg shadow-lg" poster="${thumbnail ? escapeHtml(thumbnail) : ''}" style="background:black;">
-                                <source src="${escapeHtml(best.url)}" type="video/mp4">
-                            </video>
+                            <video id="${videoId}" controls crossorigin="anonymous" referrerpolicy="no-referrer" class="w-full max-h-96 rounded-lg shadow-lg" poster="${thumbnail ? escapeHtml(thumbnail) : ''}" style="background:black;"></video>
                             <div class="flex gap-2 mt-3"><button id="fullscreenBtn" class="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded-lg text-sm">⛶ Plein écran</button><button id="downloadCurrentBtn" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-3 py-1.5 rounded-lg text-sm">📥 Télécharger</button><button id="shareCurrentBtn" class="bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded-lg text-sm">🔗 Partager</button><button id="discordCurrentBtn" class="discord-btn px-3 py-1.5 rounded-lg text-sm">💬 Discord</button><button id="qrCurrentBtn" class="bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-lg text-sm">📱 QR</button></div>
                         </div>
                         <div class="dark:bg-gray-900/60 light:bg-gray-200/60 rounded-xl p-4"><h3 class="font-semibold mb-3">📥 Qualités disponibles</h3><div class="space-y-2">${qualitiesHtml}</div></div>
@@ -770,15 +794,22 @@
                     </div>
                 `;
 
+                // Charger la vidéo en blob pour contourner CORS
+                const videoElement = document.getElementById(videoId);
+                if (videoElement && best.url) {
+                    loadVideoAsBlob(best.url, videoElement);
+                }
+
+                // Événements
                 document.getElementById('saveToLibraryBtn')?.addEventListener('click', () => { if (currentVideoData) saveToLibrary(currentVideoData); });
                 document.getElementById('discordMainBtn')?.addEventListener('click', () => { if (currentVideoData) sendToDiscordDirect(currentVideoData.url, currentVideoData.title, currentVideoData.author); });
                 document.getElementById('miniPlayerBtn')?.addEventListener('click', () => { if (currentVideoData) showMiniPlayer(currentVideoData.url, currentVideoData.title); });
                 document.getElementById('qrMainBtn')?.addEventListener('click', () => { if (currentVideoData) showQRCode(currentVideoData.url); });
                 document.getElementById('queueMainBtn')?.addEventListener('click', () => { if (currentVideoData) addToQueue(currentVideoData.url, currentVideoData.title, currentVideoData.quality); });
-                document.getElementById('qrCurrentBtn')?.addEventListener('click', () => { const v = document.getElementById('previewVideo'); const src = v?.querySelector('source')?.src || v?.src; if (src) showQRCode(src); });
-                document.getElementById('discordCurrentBtn')?.addEventListener('click', () => { const v = document.getElementById('previewVideo'); const src = v?.querySelector('source')?.src || v?.src; if (src) sendToDiscordDirect(src, title, author); });
-                document.getElementById('downloadCurrentBtn')?.addEventListener('click', () => { const v = document.getElementById('previewVideo'); const src = v?.querySelector('source')?.src || v?.src; if (src) showFormatModal(src); });
-                document.getElementById('fullscreenBtn')?.addEventListener('click', () => { const v = document.getElementById('previewVideo'); if (v?.requestFullscreen) v.requestFullscreen(); });
+                document.getElementById('qrCurrentBtn')?.addEventListener('click', () => { const v = document.getElementById(videoId); const src = v?.src; if (src) showQRCode(src); });
+                document.getElementById('discordCurrentBtn')?.addEventListener('click', () => { const v = document.getElementById(videoId); const src = v?.src; if (src) sendToDiscordDirect(src, title, author); });
+                document.getElementById('downloadCurrentBtn')?.addEventListener('click', () => { const v = document.getElementById(videoId); const src = v?.src; if (src) showFormatModal(src); });
+                document.getElementById('fullscreenBtn')?.addEventListener('click', () => { const v = document.getElementById(videoId); if (v?.requestFullscreen) v.requestFullscreen(); });
                 document.querySelectorAll('.download-btn').forEach(btn => { btn.addEventListener('click', () => showFormatModal(btn.dataset.url)); });
                 document.querySelectorAll('.save-library').forEach(btn => { btn.addEventListener('click', () => { saveToLibrary({ url: btn.dataset.url, thumbnail, title, quality: btn.dataset.quality, author, authorName }); }); });
                 document.querySelectorAll('.qr-btn').forEach(btn => { btn.addEventListener('click', () => showQRCode(btn.dataset.url)); });
@@ -1148,6 +1179,11 @@
             document.addEventListener('keydown', (e) => {
                 if ((e.key === 'q' || e.key === 'Q') && !e.target.closest('input,textarea') && currentVideoData) {
                     e.preventDefault(); addToQueue(currentVideoData.url, currentVideoData.title, currentVideoData.quality);
+                }
+                // Raccourci Escape pour fermer le mini-player
+                if (e.key === 'Escape' && miniPlayerDiv && !miniPlayerDiv.classList.contains('hidden')) {
+                    miniPlayerDiv.classList.add('hidden');
+                    if (miniPlayerVideo) miniPlayerVideo.pause();
                 }
             });
         })();
