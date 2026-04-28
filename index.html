@@ -25,8 +25,9 @@
         .dark .quality-card:hover, .dark .queue-item:hover { background: #374151; }
         .light .quality-card:hover, .light .queue-item:hover { background: #e5e7eb; }
         .theme-transition { transition: background 0.3s, color 0.3s, border-color 0.3s; }
-        video, audio { border-radius: 0.5rem; }
-        .toast { position: fixed; bottom: 20px; right: 20px; z-index: 1000; animation: slideIn 0.3s ease; background: rgba(0,0,0,0.8); color: white; padding: 8px 16px; border-radius: 8px; }
+        video { background-color: black; max-width: 100%; height: auto; border-radius: 0.5rem; }
+        audio { border-radius: 0.5rem; }
+        .toast { position: fixed; bottom: 20px; right: 20px; z-index: 1000; animation: slideIn 0.3s ease; background: rgba(0,0,0,0.8); color: white; padding: 8px 16px; border-radius: 8px; font-size: 14px; }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         .tab-button { transition: all 0.2s ease; }
         .tab-button.active { border-bottom: 3px solid #3b82f6; color: #3b82f6; }
@@ -234,7 +235,7 @@
                     <p class="text-sm font-semibold mb-2 text-indigo-400">📤 Envoyer vers :</p>
                     <button class="format-option w-full flex items-center gap-4 p-4 rounded-xl border dark:border-gray-700 light:border-gray-300 hover:border-indigo-500 transition discord-btn" data-format="discord">
                         <span class="text-3xl">💬</span>
-                        <div class="text-left"><p class="font-semibold text-white">Envoyer sur Discord</p><p class="text-xs text-indigo-200">Envoi direct de la vidéo</p></div>
+                        <div class="text-left"><p class="font-semibold text-white">Envoyer sur Discord</p><p class="text-xs text-indigo-200">Envoi du lien (fiable)</p></div>
                     </button>
                 </div>
             </div>
@@ -712,7 +713,6 @@
                 showLoading();
                 await new Promise(r => setTimeout(r, 200));
                 let lastError = null;
-                // Parallélisation des appels API
                 const results = await Promise.allSettled([
                     fetchVxTwitter(rawUrl),
                     fetchFxTwitter(rawUrl),
@@ -739,7 +739,6 @@
                 updateSEOTitle(title);
                 currentVideoData = { url: best.url, thumbnail, title, quality: best.bitrate >= 1000000 ? 'HD' : 'Standard', author: author ? escapeHtml(author) : null, authorName: authorName ? escapeHtml(authorName) : null };
                 
-                // Sauvegarde historique
                 history = [{ url: rawUrl, title: title.substring(0, 50), thumbnail, date: new Date().toISOString() }, ...history.filter(h => h.url !== rawUrl)].slice(0, 20);
                 localStorage.setItem('videoHistory', JSON.stringify(history));
                 renderHistory();
@@ -760,7 +759,9 @@
                         </div>
                         <div class="dark:bg-gray-800/40 light:bg-gray-200/40 rounded-xl p-4">
                             <h3 class="font-semibold mb-2">🎬 Aperçu vidéo</h3>
-                            <video id="previewVideo" controls class="w-full max-h-96 rounded-lg shadow-lg" poster="${thumbnail ? escapeHtml(thumbnail) : ''}"><source src="${escapeHtml(best.url)}" type="video/mp4"></video>
+                            <video id="previewVideo" controls crossorigin="anonymous" referrerpolicy="no-referrer" class="w-full max-h-96 rounded-lg shadow-lg" poster="${thumbnail ? escapeHtml(thumbnail) : ''}" style="background:black;">
+                                <source src="${escapeHtml(best.url)}" type="video/mp4">
+                            </video>
                             <div class="flex gap-2 mt-3"><button id="fullscreenBtn" class="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded-lg text-sm">⛶ Plein écran</button><button id="downloadCurrentBtn" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-3 py-1.5 rounded-lg text-sm">📥 Télécharger</button><button id="shareCurrentBtn" class="bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded-lg text-sm">🔗 Partager</button><button id="discordCurrentBtn" class="discord-btn px-3 py-1.5 rounded-lg text-sm">💬 Discord</button><button id="qrCurrentBtn" class="bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-lg text-sm">📱 QR</button></div>
                         </div>
                         <div class="dark:bg-gray-900/60 light:bg-gray-200/60 rounded-xl p-4"><h3 class="font-semibold mb-3">📥 Qualités disponibles</h3><div class="space-y-2">${qualitiesHtml}</div></div>
@@ -769,7 +770,6 @@
                     </div>
                 `;
 
-                // Événements
                 document.getElementById('saveToLibraryBtn')?.addEventListener('click', () => { if (currentVideoData) saveToLibrary(currentVideoData); });
                 document.getElementById('discordMainBtn')?.addEventListener('click', () => { if (currentVideoData) sendToDiscordDirect(currentVideoData.url, currentVideoData.title, currentVideoData.author); });
                 document.getElementById('miniPlayerBtn')?.addEventListener('click', () => { if (currentVideoData) showMiniPlayer(currentVideoData.url, currentVideoData.title); });
@@ -785,7 +785,6 @@
                 document.querySelectorAll('.queue-add-btn').forEach(btn => { btn.addEventListener('click', () => { addToQueue(btn.dataset.url, btn.dataset.title, btn.dataset.quality); }); });
                 document.querySelectorAll('.discord-send-btn').forEach(btn => { btn.addEventListener('click', () => { sendToDiscordDirect(btn.dataset.url, title, author); }); });
                 
-                // Share
                 const shareCurrent = document.getElementById('shareCurrentBtn');
                 if (shareCurrent) shareCurrent.parentNode.replaceChild(createShareButton(best.url, title), shareCurrent);
                 document.querySelectorAll('.share-btn').forEach(btn => { btn.parentNode.replaceChild(createShareButton(btn.dataset.url, btn.dataset.title), btn); });
@@ -845,27 +844,46 @@
             }
             document.getElementById('clearHistoryBtn')?.addEventListener('click', () => { history = []; localStorage.removeItem('videoHistory'); renderHistory(); showToast('Historique effacé'); });
 
-            // ========== DISCORD, QR, SHARE, MINI-PLAYER ==========
+            // ========== DISCORD (version corrigée : envoi du lien uniquement) ==========
             async function sendToDiscordDirect(videoUrl, title, author) {
-                if (!discordWebhookUrl) { document.getElementById('discordConfigModal')?.classList.remove('hidden'); showToast('⚠️ Configurez webhook'); return false; }
+                if (!discordWebhookUrl) { 
+                    document.getElementById('discordConfigModal')?.classList.remove('hidden'); 
+                    showToast('⚠️ Configurez webhook'); 
+                    return false; 
+                }
                 try {
-                    showToast('📤 Envoi...');
-                    const resp = await fetch(videoUrl);
-                    if (!resp.ok) throw new Error('Téléchargement impossible');
-                    const blob = await resp.blob();
-                    if (blob.size > 25 * 1024 * 1024) {
-                        showToast('⚠️ >25MB, envoi du lien');
-                        const linkResp = await fetch(discordWebhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: `**${title}**\n${videoUrl}`, username: discordBotName }) });
-                        return linkResp.ok;
+                    showToast('📤 Envoi du lien vers Discord...');
+                    const siteUrl = window.location.origin;
+                    const response = await fetch(discordWebhookUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            content: `**${title || '🎬 Nouvelle vidéo X'}**\n\n📥 **Lien direct** : ${videoUrl}\n\n🔧 **Télécharger avec tous les formats (MP4, audio, GIF)** : ${siteUrl}/?url=${encodeURIComponent(videoUrl)}`,
+                            username: discordBotName,
+                            embeds: [{
+                                title: title?.substring(0, 256) || 'Vidéo X',
+                                description: author ? `Posté par ${author}` : 'Cliquez sur le lien ci-dessus pour voir et télécharger la vidéo (MP4, extrait audio, GIF)',
+                                color: 0x5865F2,
+                                url: videoUrl,
+                                footer: { text: 'X Video Downloader Pro - Envoi sécurisé' },
+                                timestamp: new Date().toISOString()
+                            }]
+                        })
+                    });
+                    if (response.ok) {
+                        showToast('✅ Lien envoyé sur Discord');
+                        return true;
+                    } else {
+                        throw new Error(`HTTP ${response.status}`);
                     }
-                    const form = new FormData();
-                    form.append('file', blob, 'video.mp4');
-                    form.append('payload_json', JSON.stringify({ content: `**${title}**`, username: discordBotName }));
-                    const response = await fetch(discordWebhookUrl, { method: 'POST', body: form });
-                    if (response.ok) { showToast('✅ Envoyé sur Discord'); return true; }
-                    throw new Error(`HTTP ${response.status}`);
-                } catch (e) { showToast('❌ Erreur Discord: ' + e.message); return false; }
+                } catch(e) {
+                    console.error('Discord error:', e);
+                    showToast('❌ Erreur Discord: ' + e.message);
+                    return false;
+                }
             }
+
+            // ========== QR, SHARE, MINI-PLAYER ==========
             function showQRCode(url) {
                 const modal = document.getElementById('qrModal');
                 const qrContainer = document.getElementById('qrcode');
