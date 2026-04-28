@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>X Video Downloader Pro | Téléchargement direct mobile</title>
-    <meta name="description" content="Téléchargez les vidéos X (Twitter) directement sur votre téléphone, sans application.">
+    <title>X Video Downloader Mobile | Appui long pour enregistrer</title>
+    <meta name="description" content="Téléchargez les vidéos X (Twitter) sur mobile : appui long sur le lien vidéo, puis 'Enregistrer la vidéo'.">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <style>
@@ -15,16 +15,25 @@
         .dark .qr-popup { background: #1f2937; color: white; }
         .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; padding: 8px 20px; border-radius: 40px; font-size: 14px; z-index: 60; animation: fadeOut 2s forwards; }
         @keyframes fadeOut { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+        .mobile-instruction {
+            background-color: #fef3c7;
+            color: #92400e;
+            border-left: 4px solid #f59e0b;
+        }
+        .dark .mobile-instruction {
+            background-color: #422006;
+            color: #fde68a;
+            border-left-color: #f59e0b;
+        }
     </style>
 </head>
 <body class="bg-gray-950 text-gray-100 dark:bg-gray-950 dark:text-gray-100">
     <div class="min-h-screen flex flex-col items-center px-4 py-4 md:py-6">
         <div class="w-full max-w-4xl">
-            <!-- Header -->
             <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
                 <div>
-                    <h1 class="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">X Video Downloader Pro</h1>
-                    <p class="text-gray-400 text-sm">Téléchargement direct sur mobile • Aucune app tierce</p>
+                    <h1 class="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">X Video Downloader</h1>
+                    <p class="text-gray-400 text-sm">Version mobile simple & fiable</p>
                 </div>
                 <div class="flex items-center gap-3">
                     <div id="serviceStatus" class="flex gap-2 text-xs">
@@ -38,7 +47,6 @@
                 </div>
             </div>
 
-            <!-- Zone principale -->
             <div class="bg-white/5 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl border border-gray-200/20 dark:border-gray-800 p-5 shadow-xl">
                 <div class="flex flex-col sm:flex-row gap-3 mb-5">
                     <input type="text" id="tweetUrl" class="flex-1 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="https://x.com/.../status/... ou https://x.com/i/status/...">
@@ -62,13 +70,12 @@
                     <div id="errorContainer" class="hidden bg-red-100 dark:bg-red-950/40 border border-red-400 dark:border-red-800 rounded-xl p-4"></div>
                 </div>
             </div>
-            <div class="text-center text-gray-500 text-xs mt-6">💡 <strong>Astuce mobile :</strong> si le téléchargement ne démarre pas, appuyez longuement sur le bouton « Télécharger » → « Enregistrer le lien » ou « Télécharger le fichier ».</div>
+            <div class="text-center text-gray-500 text-xs mt-6">📱 Astuce universelle : <strong>appuyez longuement sur le lien de la qualité choisie → "Enregistrer la vidéo"</strong> (fonctionne sur tous les mobiles)</div>
         </div>
     </div>
 
     <script>
         (function(){
-            // Éléments DOM
             const urlInput = document.getElementById('tweetUrl');
             const analyzeBtn = document.getElementById('analyzeBtn');
             const initialDiv = document.getElementById('initialMessage');
@@ -79,7 +86,6 @@
             const historyListDiv = document.getElementById('historyList');
             const darkToggle = document.getElementById('darkModeToggle');
 
-            // Helper UI
             function hideAll() {
                 initialDiv.classList.add('hidden');
                 loadingDiv.classList.add('hidden');
@@ -127,7 +133,7 @@
             });
             initTheme();
 
-            // Statut des services (léger)
+            // Service status (optionnel)
             async function checkServiceStatus() {
                 const statusDivs = {
                     vx: document.querySelector('#serviceStatus span:nth-child(1)'),
@@ -140,7 +146,7 @@
             }
             checkServiceStatus();
 
-            // Historique (localStorage)
+            // Historique localStorage
             function saveHistory(tweetUrl, videoUrl, author, thumbnail, qualityLabel) {
                 let history = JSON.parse(localStorage.getItem('xdownloader_history') || '[]');
                 const newEntry = { id: Date.now(), tweetUrl, videoUrl, author: author || 'Anonyme', thumbnail: thumbnail || '', qualityLabel, timestamp: new Date().toLocaleString() };
@@ -163,41 +169,7 @@
                 });
             }
 
-            // --- FONCTION DE TÉLÉCHARGEMENT DIRECT (mobile / desktop) ---
-            async function downloadVideo(url, filename = 'x_video.mp4') {
-                try {
-                    showToast("Préparation du téléchargement...");
-                    const response = await fetch(url);
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    const blob = await response.blob();
-                    const blobUrl = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = blobUrl;
-                    a.download = filename;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(blobUrl);
-                    showToast("Téléchargement démarré !");
-                } catch (error) {
-                    console.error(error);
-                    showToast("Échec du téléchargement. Essayez l'appui long sur le bouton ci-dessous.");
-                }
-            }
-
-            // Partage (Web Share)
-            async function shareVideo(url, title = "Vidéo X") {
-                if (navigator.share) {
-                    try {
-                        await navigator.share({ title: "X Video", text: "Téléchargez cette vidéo", url: url });
-                        showToast("Partage lancé");
-                    } catch(e) { if (e.name !== 'AbortError') showToast("Partage annulé"); }
-                } else {
-                    showToast("Partage non supporté. Utilisez le lien direct.");
-                }
-            }
-
-            // Extraction des APIs (identique à avant, mais réduite pour lisibilité)
+            // Extraction API (identique)
             async function fetchWithTimeout(url, opts = {}, timeout = 10000) {
                 const ctrl = new AbortController();
                 const id = setTimeout(() => ctrl.abort(), timeout);
@@ -212,6 +184,187 @@
                             if (media.type === 'video') {
                                 if (media.url) variants.push({ bitrate: media.bitrate || 0, url: media.url });
                                 if (media.thumbnail_url) thumbnail = media.thumbnail_url;
+                                if (media.videoVariants) {
+                                    for (let v of media.videoVariants) if (v.content_type === 'video/mp4' && v.url) variants.push({ bitrate: v.bitrate || 0, url: v.url });
+                                }
+                            }
+                        }
+                    }
+                    if (!variants.length && data.mediaURLs?.length) variants = data.mediaURLs.map(url => ({ bitrate: 0, url }));
+                    author = data.user_screen_name || data.user?.screen_name;
+                    text = data.text;
+                }
+                else if (source === 'fx' || (data.tweet && data.tweet.media)) {
+                    const tweet = data.tweet;
+                    for (let media of tweet.media?.all || []) {
+                        if (media.type === 'video' && media.variants) {
+                            for (let v of media.variants) if (v.content_type === 'video/mp4' && v.url) variants.push({ bitrate: v.bitrate || 0, url: v.url });
+                            thumbnail = media.thumbnail_url || thumbnail;
+                        }
+                    }
+                    author = tweet.author?.screen_name;
+                    text = tweet.text;
+                }
+                const unique = new Map();
+                for (let v of variants) if (!unique.has(v.url)) unique.set(v.url, v);
+                return { variants: Array.from(unique.values()), thumbnail, author, text };
+            }
+            async function fetchVxTwitter(tweetUrl) {
+                const path = new URL(tweetUrl).pathname;
+                const resp = await fetchWithTimeout(`https://api.vxtwitter.com${path}`);
+                if (!resp.ok) throw new Error(`vxTwitter ${resp.status}`);
+                const data = await resp.json();
+                return { ...extractVariantsFromData(data, 'vx'), raw: data };
+            }
+            async function fetchFxTwitter(tweetUrl) {
+                const path = new URL(tweetUrl).pathname;
+                const resp = await fetchWithTimeout(`https://api.fxtwitter.com${path}`);
+                if (!resp.ok) throw new Error(`fxTwitter ${resp.status}`);
+                const data = await resp.json();
+                return { ...extractVariantsFromData(data, 'fx'), raw: data };
+            }
+            async function fetchTwitsave(tweetUrl) {
+                const resp = await fetchWithTimeout(`https://twitsave.app/api/get?url=${encodeURIComponent(tweetUrl)}`);
+                if (!resp.ok) throw new Error(`twitsave ${resp.status}`);
+                const json = await resp.json();
+                if (!json.success || !json.data?.video) throw new Error("No video");
+                const variants = json.data.video.map(v => ({ bitrate: v.quality === 'HD' ? 2000000 : 800000, url: v.url }));
+                return { variants, thumbnail: json.data.thumbnail || null, author: "twitsave", text: null, raw: json };
+            }
+
+            // Affichage des résultats : liens directs avec message d'appui long
+            function showResults(thumbnailUrl, variants, author, text, tweetUrlRaw) {
+                hideAll();
+                resultDiv.classList.remove('hidden');
+                const sorted = [...variants].sort((a,b) => (b.bitrate||0) - (a.bitrate||0));
+
+                const getLabelWithSize = (bitrate) => {
+                    if (!bitrate) return "Standard";
+                    if (bitrate >= 1500000) return `1080p+ (${(bitrate/1000).toFixed(0)} kbps)`;
+                    if (bitrate >= 800000) return `720p (${(bitrate/1000).toFixed(0)} kbps)`;
+                    if (bitrate >= 400000) return `480p (${(bitrate/1000).toFixed(0)} kbps)`;
+                    return `Basse qualité (${(bitrate/1000).toFixed(0)} kbps)`;
+                };
+
+                let qualitiesHtml = '';
+                for (let v of sorted) {
+                    if (!v.url) continue;
+                    qualitiesHtml += `
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-gray-100 dark:bg-gray-800/60 rounded-xl p-3">
+                            <span class="font-medium text-sm">${getLabelWithSize(v.bitrate)}</span>
+                            <div class="flex flex-wrap gap-2">
+                                <!-- Lien direct avec explication pour appui long -->
+                                <a href="${escapeHtml(v.url)}" target="_blank" class="bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg text-sm font-medium inline-block">🎬 Lien vidéo</a>
+                                <button data-url="${escapeHtml(v.url)}" class="copyLinkBtn bg-gray-500/20 hover:bg-gray-600 p-1.5 rounded-lg text-xs">📋 Copier</button>
+                                <button data-url="${escapeHtml(v.url)}" class="qrBtn bg-gray-500/20 hover:bg-purple-600 p-1.5 rounded-lg text-xs">📱 QR</button>
+                                <button data-url="${escapeHtml(v.url)}" class="shareBtn bg-green-600/40 hover:bg-green-700 p-1.5 rounded-lg text-xs">📤 Partager</button>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                const videoPreview = sorted[0]?.url ? `
+                    <div class="mb-4 rounded-xl overflow-hidden bg-black/30">
+                        <video controls class="w-full max-h-80" poster="${thumbnailUrl || ''}">
+                            <source src="${escapeHtml(sorted[0].url)}" type="video/mp4">
+                        </video>
+                        <p class="text-xs text-center text-gray-400 p-1">Aperçu (sans téléchargement automatique)</p>
+                    </div>
+                ` : '';
+
+                const tweetTextHtml = text ? `<p class="text-gray-600 dark:text-gray-300 text-sm italic line-clamp-2">${escapeHtml(text.substring(0, 180))}</p>` : '';
+
+                resultDiv.innerHTML = `
+                    <div class="space-y-5">
+                        <div class="flex flex-col md:flex-row gap-4 bg-gray-100/50 dark:bg-gray-800/30 p-4 rounded-xl">
+                            ${thumbnailUrl ? `<img src="${escapeHtml(thumbnailUrl)}" class="w-32 h-32 object-cover rounded-lg" onerror="this.style.display='none'" alt="miniature">` : '<div class="w-32 h-32 bg-gray-700 rounded-lg"></div>'}
+                            <div class="flex-1">
+                                <div class="flex flex-wrap gap-2 items-center">
+                                    <span class="bg-green-600/30 text-green-700 dark:text-green-300 text-xs px-2 py-0.5 rounded-full">✅ Vidéo trouvée</span>
+                                    ${author ? `<span class="text-gray-500 dark:text-gray-400 text-sm">@${escapeHtml(author)}</span>` : ''}
+                                </div>
+                                ${tweetTextHtml}
+                                <button id="copyTweetUrlBtn" class="mt-2 text-xs text-blue-500 hover:underline">🔗 Copier l'URL du tweet</button>
+                            </div>
+                        </div>
+                        ${videoPreview}
+                        <div class="bg-gray-100 dark:bg-gray-900/70 rounded-xl p-4">
+                            <h3 class="font-semibold mb-3 flex items-center gap-2">📲 Qualités disponibles</h3>
+                            <div class="grid gap-2">${qualitiesHtml}</div>
+                            <div class="mt-4 p-3 rounded-lg mobile-instruction text-sm">
+                                📱 <strong>Comment télécharger sur mobile (iPhone / Android) :</strong><br>
+                                1️⃣ Appuyez <strong>longuement</strong> sur le bouton <span class="font-mono bg-gray-200 dark:bg-gray-700 px-1 rounded">🎬 Lien vidéo</span><br>
+                                2️⃣ Dans le menu qui apparaît, choisissez <strong>« Enregistrer la vidéo »</strong> (ou « Télécharger le fichier »).<br>
+                                💡 Si vous ne voyez pas cette option, utilisez « Copier le lien » puis collez-le dans votre navigateur et répétez l'appui long.
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Événements auxiliaires
+                document.querySelectorAll('.copyLinkBtn').forEach(btn => {
+                    btn.addEventListener('click', async () => { await navigator.clipboard.writeText(btn.dataset.url); showToast('Lien vidéo copié !'); });
+                });
+                document.querySelectorAll('.qrBtn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        let popup = document.getElementById('dynamicQrPopup');
+                        if(popup) popup.remove();
+                        popup = document.createElement('div');
+                        popup.id = 'dynamicQrPopup';
+                        popup.className = 'qr-popup p-3 shadow-2xl rounded-xl bg-white dark:bg-gray-800';
+                        popup.innerHTML = `<div class="text-sm font-medium mb-2">📱 Scannez</div><div id="qrCodeContainer"></div><button class="text-xs mt-2 text-blue-500">Fermer</button>`;
+                        document.body.appendChild(popup);
+                        new QRCode(popup.querySelector('#qrCodeContainer'), { text: btn.dataset.url, width: 120, height: 120 });
+                        popup.querySelector('button').onclick = () => popup.remove();
+                    });
+                });
+                document.querySelectorAll('.shareBtn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        if (navigator.share) {
+                            navigator.share({ title: "X Video", url: btn.dataset.url }).catch(() => {});
+                        } else {
+                            showToast("Partage non supporté, utilisez Copier.");
+                        }
+                    });
+                });
+                document.getElementById('copyTweetUrlBtn')?.addEventListener('click', async () => { await navigator.clipboard.writeText(tweetUrlRaw); showToast('URL tweet copiée'); });
+
+                // Sauvegarde historique
+                saveHistory(tweetUrlRaw, sorted[0]?.url, author, thumbnailUrl, getLabelWithSize(sorted[0]?.bitrate || 0));
+            }
+
+            async function analyzeTweet() {
+                const rawUrl = urlInput.value.trim();
+                if (!rawUrl) { showError("Veuillez entrer une URL.", null); return; }
+                if (!rawUrl.includes('/status/')) { showError("URL invalide - doit contenir /status/", null); return; }
+                showLoading();
+
+                const services = [
+                    { name: 'vxTwitter', fn: fetchVxTwitter },
+                    { name: 'fxTwitter', fn: fetchFxTwitter },
+                    { name: 'twitsave', fn: fetchTwitsave }
+                ];
+                for (const svc of services) {
+                    try {
+                        const result = await svc.fn(rawUrl);
+                        if (result.variants && result.variants.length > 0) {
+                            showResults(result.thumbnail, result.variants, result.author, result.text, rawUrl);
+                            return;
+                        }
+                    } catch (err) { console.warn(`${svc.name} failed:`, err); }
+                }
+                showError("Aucune vidéo trouvée après 3 services.", "Le tweet ne contient pas de vidéo publique ou API momentanément indisponible.");
+            }
+
+            analyzeBtn.onclick = analyzeTweet;
+            urlInput.onkeypress = e => { if(e.key === 'Enter') analyzeTweet(); };
+            renderHistory();
+            hideAll();
+            initialDiv.classList.remove('hidden');
+        })();
+    </script>
+</body>
+</html>
                                 if (media.videoVariants) {
                                     for (let v of media.videoVariants) if (v.content_type === 'video/mp4' && v.url) variants.push({ bitrate: v.bitrate || 0, url: v.url });
                                 }
